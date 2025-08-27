@@ -26,10 +26,12 @@ export default tseslint.config([
     },
   },
   {
+    // Rules for config files
     rules: { 'import/no-unresolved': 'off' },
     files: ['./eslint.config.mjs', 'vitest.config.ts'],
   },
   {
+    // Rules for test files
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
       'no-useless-escape': 'off',
@@ -41,11 +43,13 @@ export default tseslint.config([
     ],
   },
   {
+    // Common rules
     rules: {
       '@typescript-eslint/no-extraneous-class': 'off',
       '@typescript-eslint/naming-convention': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
+      '@stylistic/comma-dangle': 'off',
       '@stylistic/operator-linebreak': [
         'error',
         'after',
@@ -61,12 +65,7 @@ export default tseslint.config([
           },
         },
       ],
-      '@stylistic/object-curly-newline': [
-        'error',
-        {
-          ExportDeclaration: { multiline: true, minProperties: 4, consistent: true },
-        },
-      ],
+      '@stylistic/object-curly-newline': 'off',
       '@stylistic/padding-line-between-statements': 'off',
       '@typescript-eslint/prefer-for-of': 'off',
       '@typescript-eslint/unified-signatures': 'off',
