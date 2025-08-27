@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    // Linting and Formatting
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    // Testing
+    "vitest.explorer",
+    "ms-vscode.test-adapter-converter",
+    // Code Quality
+    "streetsidesoftware.code-spell-checker",
+    "DavidAnson.vscode-markdownlint",
+    "fill-labs.dependi"
+  ],
+}

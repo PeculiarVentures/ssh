@@ -1,0 +1,52 @@
+{
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  // TypeScript settings
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  // ESLint settings
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+  ],
+  "eslint.codeAction.showDocumentation": {
+    "enable": true
+  },
+  // Prettier settings
+  "prettier.requireConfig": true,
+  "prettier.configPath": ".prettierrc",
+  // Testing settings
+  "testExplorer.useNativeTesting": true,
+  // File associations
+  "files.associations": {
+    "*.md": "markdown",
+    ".prettierrc": "json",
+    "vitest.config.ts": "typescript"
+  },
+  // Exclude files from search and explorer
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.git": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/*.log": true
+  },
+  // Git settings
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+}
