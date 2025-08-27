@@ -12,3 +12,6 @@ export * from './wire';
 
 // Key classes
 export * from './key';
+
+// Certificate classes
+export * from './cert';

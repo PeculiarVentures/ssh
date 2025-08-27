@@ -14,7 +14,7 @@ export function parsePublicKey(input: string | Uint8Array): SshPublicKeyBlob {
   }
 
   const type = parts[0] as SshKeyType;
-  const blob = Uint8Array.from(atob(parts[1]), (c) => c.charCodeAt(0));
+  const blob = Uint8Array.from(atob(parts[1]), c => c.charCodeAt(0));
   const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
 
   // Validate blob
