@@ -1,3 +1,4 @@
+import { Convert } from 'pvtsutils';
 import { describe, expect, it } from 'vitest';
 import {
   ecdsaP256Key,
@@ -17,7 +18,7 @@ describe('parsePublicKey', () => {
     writer.writeMpInt(new Uint8Array([0x00, 0x01, 0x02])); // e
     writer.writeMpInt(new Uint8Array([0x03, 0x04, 0x05])); // n
     const keyData = writer.toUint8Array();
-    const base64 = btoa(String.fromCharCode(...keyData));
+    const base64 = Convert.ToBase64(keyData);
     const keyString = `ssh-rsa ${base64} user@example.com`;
 
     const result = parsePublicKey(keyString);
@@ -32,7 +33,7 @@ describe('parsePublicKey', () => {
     writer.writeMpInt(new Uint8Array([0x00, 0x01]));
     writer.writeMpInt(new Uint8Array([0x02, 0x03]));
     const keyData = writer.toUint8Array();
-    const base64 = btoa(String.fromCharCode(...keyData));
+    const base64 = Convert.ToBase64(keyData);
     const keyString = `ssh-rsa ${base64}`;
 
     const result = parsePublicKey(keyString);
@@ -88,7 +89,7 @@ describe('parsePublicKey', () => {
     const writer = new SshWriter();
     writer.writeString('ssh-dss'); // different type in blob
     const keyData = writer.toUint8Array();
-    const base64 = btoa(String.fromCharCode(...keyData));
+    const base64 = Convert.ToBase64(keyData);
     const keyString = `ssh-rsa ${base64}`;
 
     expect(() => parsePublicKey(keyString)).toThrow('Key type mismatch');
@@ -110,7 +111,7 @@ describe('serializePublicKey', () => {
     };
 
     const result = serializePublicKey(blob);
-    const expectedBase64 = btoa(String.fromCharCode(...keyData));
+    const expectedBase64 = Convert.ToBase64(keyData);
     expect(result).toBe(`ssh-rsa ${expectedBase64} user@example.com`);
   });
 
@@ -127,7 +128,7 @@ describe('serializePublicKey', () => {
     };
 
     const result = serializePublicKey(blob);
-    const expectedBase64 = btoa(String.fromCharCode(...keyData));
+    const expectedBase64 = Convert.ToBase64(keyData);
     expect(result).toBe(`ssh-rsa ${expectedBase64}`);
   });
 

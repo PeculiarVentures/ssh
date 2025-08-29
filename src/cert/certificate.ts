@@ -1,5 +1,6 @@
 import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
+import { AlgorithmRegistry } from '../registry';
 import {
   parseCertificateData,
   parse as parseWireCertificate,
@@ -8,6 +9,7 @@ import {
   type SshCertificateData,
 } from '../wire/certificate';
 import { SshReader } from '../wire/reader';
+import { SshWriter } from '../wire/writer';
 
 export type SshCertificateType = 'user' | 'host';
 
@@ -146,11 +148,7 @@ export class SshCertificate {
       if (!this.data) {
         throw new Error('Failed to parse certificate data');
       }
-      const publicKeyBlob = {
-        type: this.data.keyType as any,
-        keyData: this.data.publicKey,
-      };
-      this._publicKey = new SshPublicKey(publicKeyBlob);
+      this._publicKey = new SshPublicKey(this.data.publicKey);
     }
     return this._publicKey;
   }
@@ -167,15 +165,7 @@ export class SshCertificate {
         throw new Error('Failed to parse certificate data');
       }
 
-      // Parse the signature key blob to determine its actual type
-      const reader = new SshReader(this.data.signatureKey);
-      const signatureKeyType = reader.readString();
-
-      const signatureKeyBlob = {
-        type: signatureKeyType as any,
-        keyData: this.data.signatureKey,
-      };
-      this._signatureKey = new SshPublicKey(signatureKeyBlob);
+      this._signatureKey = new SshPublicKey(this.data.signatureKey);
     }
     return this._signatureKey;
   }
@@ -223,31 +213,207 @@ export class SshCertificate {
     // Create the data to be signed (everything except the signature)
     const signedData = this.getSignedData();
 
-    // Verify the signature
-    try {
-      const signatureStr = btoa(String.fromCharCode(...this.data.signature));
-      return await verifyKey.verify(signedData, signatureStr, crypto);
-    } catch {
-      return false;
+    // Decode SSH signature to raw format
+    const binding = AlgorithmRegistry.get(verifyKey.type);
+    if (!binding) {
+      throw new Error(`Unsupported key type: ${verifyKey.type}`);
     }
+
+    const decodedSignature = binding.decodeSshSignature({ signature: this.data.signature });
+
+    // Get CryptoKey and verify
+    const cryptoKey = await verifyKey.toCryptoKey(crypto);
+    return binding.verify({
+      publicKey: cryptoKey,
+      signature: decodedSignature.signature,
+      data: signedData,
+      crypto,
+    });
   }
 
   /**
    * Get the signed data portion of the certificate
    */
   private getSignedData(): Uint8Array {
-    // For now, return the first part of the certificate data
-    // This is a simplified implementation
     if (!this.data) {
       throw new Error('Certificate not parsed');
     }
 
-    // Calculate signed data length by finding signature offset
-    const totalLength = this._blob.keyData.length;
-    const signatureLength = this.data.signature.length;
-    const signedDataLength = totalLength - signatureLength - 4; // -4 for signature length field
+    // According to PROTOCOL.certkeys specification:
+    // "signature is computed over all preceding fields from the initial string
+    // up to, and including the signature key"
 
-    return this._blob.keyData.slice(0, signedDataLength);
+    // Find where the signature field starts (after signature key)
+    const reader = new SshReader(this._blob.keyData);
+
+    // Skip all fields until we reach the signature
+    reader.readString(); // certificate type
+    reader.readBytes(reader.readUint32()); // nonce
+
+    // Skip public key
+    if (this.data.keyType === 'ssh-ed25519') {
+      reader.readBytes(reader.readUint32());
+    } else if (this.data.keyType === 'ssh-rsa') {
+      reader.readBytes(reader.readUint32()); // e
+      reader.readBytes(reader.readUint32()); // n
+    }
+
+    reader.readUint64(); // serial
+    reader.readUint32(); // type
+    reader.readBytes(reader.readUint32()); // key id
+    reader.readBytes(reader.readUint32()); // valid principals
+    reader.readUint64(); // valid after
+    reader.readUint64(); // valid before
+    reader.readBytes(reader.readUint32()); // critical options
+    reader.readBytes(reader.readUint32()); // extensions
+    reader.readBytes(reader.readUint32()); // reserved
+    reader.readBytes(reader.readUint32()); // signature key - THIS IS INCLUDED in signed data
+
+    // Everything up to this point (INCLUDING signature key) is signed
+    const signedDataEnd = reader.getOffset();
+
+    // Return the exact bytes from the beginning INCLUDING signature key
+    return this._blob.keyData.slice(0, signedDataEnd);
+  }
+
+  private getCertificateTypeFromKeyType(keyType: string): string {
+    switch (keyType) {
+      case 'ssh-ed25519':
+        return 'ssh-ed25519-cert-v01@openssh.com';
+      case 'ssh-rsa':
+        return 'ssh-rsa-cert-v01@openssh.com';
+      case 'ecdsa-sha2-nistp256':
+        return 'ecdsa-sha2-nistp256-cert-v01@openssh.com';
+      case 'ecdsa-sha2-nistp384':
+        return 'ecdsa-sha2-nistp384-cert-v01@openssh.com';
+      case 'ecdsa-sha2-nistp521':
+        return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
+      default:
+        throw new Error(`Unsupported key type for certificate: ${keyType}`);
+    }
+  }
+
+  private getCertificateDataWithoutSignature(): Uint8Array {
+    if (!this.data) {
+      throw new Error('Certificate not parsed');
+    }
+
+    const reader = new SshReader(this._blob.keyData);
+
+    // Skip certificate type (we already have it)
+    reader.readString();
+
+    // Read nonce
+    const nonceLength = reader.readUint32();
+    const nonce = reader.readBytes(nonceLength);
+
+    // Read public key based on certificate type
+    let publicKeyData: Uint8Array;
+    if (this.data.keyType === 'ssh-ed25519') {
+      const pubKeyLength = reader.readUint32();
+      publicKeyData = reader.readBytes(pubKeyLength);
+    } else if (this.data.keyType === 'ssh-rsa') {
+      // RSA has two components: e and n
+      const eLength = reader.readUint32();
+      const e = reader.readBytes(eLength);
+      const nLength = reader.readUint32();
+      const n = reader.readBytes(nLength);
+
+      // Combine e and n into one data block for length calculation
+      const writer = new SshWriter();
+      writer.writeUint32(eLength);
+      writer.writeBytes(e);
+      writer.writeUint32(nLength);
+      writer.writeBytes(n);
+      publicKeyData = writer.toUint8Array();
+    } else {
+      throw new Error(`Unsupported key type: ${this.data.keyType}`);
+    }
+
+    // Read serial
+    const serial = reader.readUint64();
+
+    // Read type
+    const type = reader.readUint32();
+
+    // Read key ID
+    const keyIdLength = reader.readUint32();
+    const keyId = reader.readBytes(keyIdLength);
+
+    // Read valid principals
+    const principalsLength = reader.readUint32();
+    const principals = reader.readBytes(principalsLength);
+
+    // Read validity period
+    const validAfter = reader.readUint64();
+    const validBefore = reader.readUint64();
+
+    // Read critical options
+    const criticalOptionsLength = reader.readUint32();
+    const criticalOptions = reader.readBytes(criticalOptionsLength);
+
+    // Read extensions
+    const extensionsLength = reader.readUint32();
+    const extensions = reader.readBytes(extensionsLength);
+
+    // Read reserved
+    const reservedLength = reader.readUint32();
+    const reserved = reader.readBytes(reservedLength);
+
+    // Read signature key - this is PART OF the signed data
+    const signatureKeyLength = reader.readUint32();
+    const signatureKey = reader.readBytes(signatureKeyLength);
+
+    // Now rebuild the data structure up to this point (but NOT including the signature)
+    const writer = new SshWriter();
+
+    // Write nonce
+    writer.writeUint32(nonceLength);
+    writer.writeBytes(nonce);
+
+    // Write public key data
+    if (this.data.keyType === 'ssh-ed25519') {
+      writer.writeUint32(publicKeyData.length);
+      writer.writeBytes(publicKeyData);
+    } else if (this.data.keyType === 'ssh-rsa') {
+      writer.writeBytes(publicKeyData); // Already contains the length prefixed data
+    }
+
+    // Write serial
+    writer.writeUint64(serial);
+
+    // Write type
+    writer.writeUint32(type);
+
+    // Write key ID
+    writer.writeUint32(keyIdLength);
+    writer.writeBytes(keyId);
+
+    // Write valid principals
+    writer.writeUint32(principalsLength);
+    writer.writeBytes(principals);
+
+    // Write validity period
+    writer.writeUint64(validAfter);
+    writer.writeUint64(validBefore);
+
+    // Write critical options
+    writer.writeUint32(criticalOptionsLength);
+    writer.writeBytes(criticalOptions);
+
+    // Write extensions
+    writer.writeUint32(extensionsLength);
+    writer.writeBytes(extensions);
+
+    // Write reserved
+    writer.writeUint32(reservedLength);
+    writer.writeBytes(reserved);
+
+    // Write signature key (this is part of signed data)
+    writer.writeUint32(signatureKeyLength);
+    writer.writeBytes(signatureKey);
+
+    return writer.toUint8Array();
   }
 
   /**

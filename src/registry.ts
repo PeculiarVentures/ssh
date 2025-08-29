@@ -72,6 +72,11 @@ export interface AlgorithmBinding {
 
   encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array;
   decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult;
+
+  /**
+   * Check if this binding supports the given WebCrypto CryptoKey
+   */
+  supportsCryptoKey(cryptoKey: CryptoKey): boolean;
 }
 
 const registry = new Map<string, AlgorithmBinding>();
@@ -84,4 +89,26 @@ export class AlgorithmRegistry {
   static register(name: string, binding: AlgorithmBinding): void {
     registry.set(name, binding);
   }
+
+  /**
+   * Get SSH key type that supports the given WebCrypto CryptoKey
+   */
+  static getSshTypeFromCryptoKey(cryptoKey: CryptoKey): string | undefined {
+    for (const [sshType, binding] of registry.entries()) {
+      if (binding.supportsCryptoKey(cryptoKey)) {
+        return sshType;
+      }
+    }
+    return undefined;
+  }
 }
+
+// Import and register algorithms
+import { Ed25519Binding } from './algorithms/ed25519';
+import { RsaBinding } from './algorithms/rsa';
+
+// Register Ed25519
+AlgorithmRegistry.register('ssh-ed25519', new Ed25519Binding());
+
+// Register RSA
+AlgorithmRegistry.register('ssh-rsa', new RsaBinding());

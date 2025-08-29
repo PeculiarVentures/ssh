@@ -7,20 +7,26 @@ import {
   type SshPublicKeyBlob,
 } from '../wire/public_key';
 
+/**
+ * Auto-detect SSH key type from WebCrypto CryptoKey
+ */
+function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
+  const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
+  if (!sshType) {
+    throw new Error(`Unsupported algorithm: ${(cryptoKey.algorithm as any).name}`);
+  }
+  return sshType as SshKeyType;
+}
+
 export type SshPublicKeyExportFormat = 'ssh' | 'spki';
 
 export class SshPublicKey {
   private blob: SshPublicKeyBlob;
-  private cryptoKey?: CryptoKey;
 
-  constructor(blob: SshPublicKeyBlob, cryptoKey?: CryptoKey) {
+  constructor(blob: SshPublicKeyBlob) {
     this.blob = blob;
-    this.cryptoKey = cryptoKey;
   }
 
-  /**
-   * Import from SSH public key string
-   */
   static async importPublicFromSsh(sshKey: string, crypto = getCrypto()): Promise<SshPublicKey> {
     const blob = parseWirePublicKey(sshKey);
     const binding = AlgorithmRegistry.get(blob.type);
@@ -28,13 +34,11 @@ export class SshPublicKey {
       throw new Error(`Unsupported key type: ${blob.type}`);
     }
 
-    const cryptoKey = await binding.importPublicFromSsh({ blob: blob.keyData, crypto });
-    return new SshPublicKey(blob, cryptoKey);
+    // Validate that the key can be imported (but don't store CryptoKey)
+    await binding.importPublicFromSsh({ blob: blob.keyData, crypto });
+    return new SshPublicKey(blob);
   }
 
-  /**
-   * Import from SPKI format
-   */
   static async importPublicSpki(
     spki: ByteView,
     type: SshKeyType,
@@ -52,34 +56,31 @@ export class SshPublicKey {
       keyData: exported,
     };
 
-    return new SshPublicKey(blob, cryptoKey);
+    return new SshPublicKey(blob);
   }
 
-  /**
-   * Create from WebCrypto CryptoKey
-   */
   static async fromWebCrypto(
     cryptoKey: CryptoKey,
-    type: SshKeyType,
+    type?: SshKeyType,
     crypto = getCrypto(),
   ): Promise<SshPublicKey> {
-    const binding = AlgorithmRegistry.get(type);
+    // Auto-detect SSH key type from CryptoKey if not provided
+    const sshType = type || getSshKeyTypeFromCryptoKey(cryptoKey);
+
+    const binding = AlgorithmRegistry.get(sshType);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${type}`);
+      throw new Error(`Unsupported key type: ${sshType}`);
     }
 
     const exported = await binding.exportPublicToSsh({ publicKey: cryptoKey, crypto });
     const blob: SshPublicKeyBlob = {
-      type,
+      type: sshType,
       keyData: exported,
     };
 
-    return new SshPublicKey(blob, cryptoKey);
+    return new SshPublicKey(blob);
   }
 
-  /**
-   * Export public key
-   */
   async export(
     format: SshPublicKeyExportFormat = 'ssh',
     crypto = getCrypto(),
@@ -91,8 +92,7 @@ export class SshPublicKey {
       if (!binding) {
         throw new Error(`Unsupported key type: ${this.blob.type}`);
       }
-      const cryptoKey =
-        this.cryptoKey || (await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto }));
+      const cryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
       const spki = await binding.exportPublicSpki({ publicKey: cryptoKey, crypto });
       return new Uint8Array(spki);
     }
@@ -102,30 +102,20 @@ export class SshPublicKey {
   /**
    * Export to SPKI
    */
-  async exportPublicSpki(): Promise<Uint8Array> {
-    const result = await this.export('spki');
+  async exportPublicSpki(crypto = getCrypto()): Promise<Uint8Array> {
+    const result = await this.export('spki', crypto);
     return result as Uint8Array;
   }
 
   /**
-   * Verify signature in SSH format
+   * Convert to WebCrypto CryptoKey for cryptographic operations
    */
-  async verify(data: ByteView, signature: string, crypto = getCrypto()): Promise<boolean> {
+  async toCryptoKey(crypto = getCrypto()): Promise<CryptoKey> {
     const binding = AlgorithmRegistry.get(this.blob.type);
     if (!binding) {
       throw new Error(`Unsupported key type: ${this.blob.type}`);
     }
-    const cryptoKey =
-      this.cryptoKey || (await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto }));
-
-    const sigBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
-    const decoded = binding.decodeSshSignature({ signature: sigBytes });
-    return await binding.verify({
-      publicKey: cryptoKey,
-      signature: decoded.signature,
-      data,
-      crypto,
-    });
+    return binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
   }
 
   /**

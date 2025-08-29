@@ -1,7 +1,19 @@
+import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import { SshPublicKey } from './public_key';
+
+/**
+ * Auto-detect SSH key type from WebCrypto CryptoKey
+ */
+function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
+  const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
+  if (!sshType) {
+    throw new Error(`Unsupported algorithm: ${(cryptoKey.algorithm as any).name}`);
+  }
+  return sshType as SshKeyType;
+}
 
 export type SshPrivateKeyExportFormat = 'ssh' | 'pkcs8';
 
@@ -44,8 +56,10 @@ export class SshPrivateKey {
   /**
    * Create from WebCrypto CryptoKey
    */
-  static async fromWebCrypto(cryptoKey: CryptoKey, type: SshKeyType): Promise<SshPrivateKey> {
-    return new SshPrivateKey(cryptoKey, type);
+  static async fromWebCrypto(cryptoKey: CryptoKey, type?: SshKeyType): Promise<SshPrivateKey> {
+    // Auto-detect SSH key type from CryptoKey if not provided
+    const sshType = type || getSshKeyTypeFromCryptoKey(cryptoKey);
+    return new SshPrivateKey(cryptoKey, sshType);
   }
 
   /**
@@ -89,7 +103,7 @@ export class SshPrivateKey {
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
     const sshAlgo = algo || this.type; // Default to key type
     const encoded = binding.encodeSshSignature({ signature, algo: sshAlgo as any });
-    return btoa(String.fromCharCode(...encoded));
+    return Convert.ToBase64(encoded);
   }
 
   /**

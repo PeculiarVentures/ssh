@@ -14,6 +14,7 @@ describe('AlgorithmRegistry', () => {
       verify: vi.fn(),
       encodeSshSignature: vi.fn(),
       decodeSshSignature: vi.fn(),
+      supportsCryptoKey: vi.fn(),
     };
     AlgorithmRegistry.register('test', mockBinding);
     expect(AlgorithmRegistry.get('test')).toBe(mockBinding);

@@ -1,4 +1,6 @@
+import { Convert } from 'pvtsutils';
 import type { ByteView, SshKeyType } from '../types';
+import type { SshPublicKeyBlob } from './public_key';
 import { SshReader } from './reader';
 import { SshWriter } from './writer';
 
@@ -11,7 +13,7 @@ export interface SshCertificateBlob {
 export interface SshCertificateData {
   nonce: Uint8Array;
   keyType: string;
-  publicKey: Uint8Array;
+  publicKey: SshPublicKeyBlob;
   serial: bigint;
   type: 'user' | 'host';
   keyId: string;
@@ -21,7 +23,7 @@ export interface SshCertificateData {
   criticalOptions: Record<string, string>;
   extensions: Record<string, string>;
   reserved: Uint8Array;
-  signatureKey: Uint8Array;
+  signatureKey: SshPublicKeyBlob;
   signature: Uint8Array;
 }
 
@@ -33,7 +35,7 @@ export function parse(input: ByteView | string): SshCertificateBlob {
     }
 
     const type = parts[0] as SshKeyType;
-    const blob = Uint8Array.from(atob(parts[1]), c => c.charCodeAt(0));
+    const blob = new Uint8Array(Convert.FromBase64(parts[1]));
     const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
 
     // Validate blob
@@ -77,7 +79,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
   const nonce = reader.readBytes(reader.readUint32());
 
   // Read public key based on certificate type
-  let publicKey: Uint8Array;
+  let publicKey: SshPublicKeyBlob;
   let keyType: string;
 
   if (certType === 'ssh-rsa-cert-v01@openssh.com') {
@@ -90,7 +92,10 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
     writer.writeString('ssh-rsa');
     writer.writeBytes(publicKeyExponent);
     writer.writeBytes(publicKeyModulus);
-    publicKey = writer.toUint8Array();
+    publicKey = {
+      type: 'ssh-rsa',
+      keyData: writer.toUint8Array(),
+    };
     keyType = 'ssh-rsa';
   } else if (certType === 'ssh-ed25519-cert-v01@openssh.com') {
     // For Ed25519 certificates, read the public key
@@ -100,7 +105,10 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
     const writer = new SshWriter();
     writer.writeString('ssh-ed25519');
     writer.writeBytes(publicKeyData);
-    publicKey = writer.toUint8Array();
+    publicKey = {
+      type: 'ssh-ed25519',
+      keyData: writer.toUint8Array(),
+    };
     keyType = 'ssh-ed25519';
   } else if (certType === 'ecdsa-sha2-nistp256-cert-v01@openssh.com') {
     // For ECDSA P-256 certificates, read the curve and public key point
@@ -112,7 +120,10 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
     writer.writeString('ecdsa-sha2-nistp256');
     writer.writeString(curveName);
     writer.writeBytes(publicKeyPoint);
-    publicKey = writer.toUint8Array();
+    publicKey = {
+      type: 'ecdsa-sha2-nistp256',
+      keyData: writer.toUint8Array(),
+    };
     keyType = 'ecdsa-sha2-nistp256';
   } else if (certType === 'ecdsa-sha2-nistp384-cert-v01@openssh.com') {
     // For ECDSA P-384 certificates
@@ -123,7 +134,10 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
     writer.writeString('ecdsa-sha2-nistp384');
     writer.writeString(curveName);
     writer.writeBytes(publicKeyPoint);
-    publicKey = writer.toUint8Array();
+    publicKey = {
+      type: 'ecdsa-sha2-nistp384',
+      keyData: writer.toUint8Array(),
+    };
     keyType = 'ecdsa-sha2-nistp384';
   } else if (certType === 'ecdsa-sha2-nistp521-cert-v01@openssh.com') {
     // For ECDSA P-521 certificates
@@ -134,7 +148,10 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
     writer.writeString('ecdsa-sha2-nistp521');
     writer.writeString(curveName);
     writer.writeBytes(publicKeyPoint);
-    publicKey = writer.toUint8Array();
+    publicKey = {
+      type: 'ecdsa-sha2-nistp521',
+      keyData: writer.toUint8Array(),
+    };
     keyType = 'ecdsa-sha2-nistp521';
   } else {
     throw new Error(`Unsupported certificate type: ${certType}`);
@@ -215,7 +232,15 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 
   // Read signature key
   const signatureKeyLength = reader.readUint32();
-  const signatureKey = reader.readBytes(signatureKeyLength);
+  const signatureKeyData = reader.readBytes(signatureKeyLength);
+
+  // Parse signature key type
+  const signatureKeyReader = new SshReader(signatureKeyData);
+  const signatureKeyType = signatureKeyReader.readString();
+  const signatureKey: SshPublicKeyBlob = {
+    type: signatureKeyType as SshKeyType,
+    keyData: signatureKeyData,
+  };
 
   // Read signature
   const signatureLength = reader.readUint32();
@@ -240,10 +265,156 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 }
 
 export function serialize(cert: SshCertificateBlob): string {
-  const base64 = btoa(String.fromCharCode(...cert.keyData));
+  const base64 = Convert.ToBase64(cert.keyData);
   const parts = [cert.type, base64];
   if (cert.comment) {
     parts.push(cert.comment);
   }
   return parts.join(' ');
+}
+
+export interface CreateCertificateDataParams {
+  publicKey: SshPublicKeyBlob;
+  keyType: string;
+  serial: bigint;
+  type: 'user' | 'host';
+  keyId: string;
+  validPrincipals: string[];
+  validAfter: bigint;
+  validBefore: bigint;
+  criticalOptions: Record<string, string>;
+  extensions: Record<string, string>;
+  nonce?: Uint8Array;
+  signatureKey?: SshPublicKeyBlob;
+  signature?: Uint8Array;
+}
+
+export function createCertificateData(params: CreateCertificateDataParams): Uint8Array {
+  const {
+    publicKey,
+    keyType,
+    serial,
+    type,
+    keyId,
+    validPrincipals,
+    validAfter,
+    validBefore,
+    criticalOptions,
+    extensions,
+    nonce,
+    signatureKey,
+    signature,
+  } = params;
+
+  const writer = new SshWriter();
+
+  // Write certificate type
+  const certType = getCertificateType(keyType);
+  writer.writeString(certType);
+
+  // Write nonce
+  const certNonce = nonce || new Uint8Array(32); // Use zero-filled array if no nonce provided
+  writer.writeUint32(certNonce.length);
+  writer.writeBytes(certNonce);
+
+  // Write public key data based on key type
+  if (keyType === 'ssh-ed25519') {
+    // For Ed25519, extract the raw key data (skip type string and length)
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ssh-ed25519"
+    const keyLength = publicKeyReader.readUint32(); // Read length of key data
+    const rawKeyData = publicKeyReader.readBytes(keyLength); // Read actual key data
+    writer.writeUint32(rawKeyData.length);
+    writer.writeBytes(rawKeyData);
+  } else if (keyType === 'ssh-rsa') {
+    // For RSA, extract e and n components
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ssh-rsa"
+    const e = publicKeyReader.readMpInt();
+    const n = publicKeyReader.readMpInt();
+    writer.writeUint32(e.length);
+    writer.writeBytes(e);
+    writer.writeUint32(n.length);
+    writer.writeBytes(n);
+  } else {
+    throw new Error(`Unsupported key type for certificate creation: ${keyType}`);
+  }
+
+  // Write serial
+  writer.writeUint64(serial);
+
+  // Write type
+  writer.writeUint32(type === 'user' ? 1 : 2);
+
+  // Write key ID
+  writer.writeString(keyId);
+
+  // Write valid principals
+  const principalsWriter = new SshWriter();
+  for (const principal of validPrincipals) {
+    principalsWriter.writeString(principal);
+  }
+  writer.writeUint32(principalsWriter.getOffset());
+  writer.writeBytes(principalsWriter.toUint8Array());
+
+  // Write validity period
+  writer.writeUint64(validAfter);
+  writer.writeUint64(validBefore);
+
+  // Write critical options
+  const optionsWriter = new SshWriter();
+  for (const [name, value] of Object.entries(criticalOptions)) {
+    optionsWriter.writeString(name);
+    const valueBytes = new TextEncoder().encode(value);
+    optionsWriter.writeUint32(valueBytes.length);
+    optionsWriter.writeBytes(valueBytes);
+  }
+  writer.writeUint32(optionsWriter.getOffset());
+  writer.writeBytes(optionsWriter.toUint8Array());
+
+  // Write extensions
+  const extensionsWriter = new SshWriter();
+  for (const [name, value] of Object.entries(extensions)) {
+    extensionsWriter.writeString(name);
+    const valueBytes = new TextEncoder().encode(value);
+    extensionsWriter.writeUint32(valueBytes.length);
+    extensionsWriter.writeBytes(valueBytes);
+  }
+  writer.writeUint32(extensionsWriter.getOffset());
+  writer.writeBytes(extensionsWriter.toUint8Array());
+
+  // Write reserved (empty)
+  writer.writeUint32(0);
+  writer.writeBytes(new Uint8Array(0));
+
+  // Write signature key (if provided)
+  if (signatureKey) {
+    writer.writeUint32(signatureKey.keyData.length);
+    writer.writeBytes(signatureKey.keyData);
+  }
+
+  // Write signature (if provided)
+  if (signature) {
+    writer.writeUint32(signature.length);
+    writer.writeBytes(signature);
+  }
+
+  return writer.toUint8Array();
+}
+
+function getCertificateType(keyType: string): string {
+  switch (keyType) {
+    case 'ssh-ed25519':
+      return 'ssh-ed25519-cert-v01@openssh.com';
+    case 'ssh-rsa':
+      return 'ssh-rsa-cert-v01@openssh.com';
+    case 'ecdsa-sha2-nistp256':
+      return 'ecdsa-sha2-nistp256-cert-v01@openssh.com';
+    case 'ecdsa-sha2-nistp384':
+      return 'ecdsa-sha2-nistp384-cert-v01@openssh.com';
+    case 'ecdsa-sha2-nistp521':
+      return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
+    default:
+      throw new Error(`Unsupported key type for certificate: ${keyType}`);
+  }
 }
