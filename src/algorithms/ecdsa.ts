@@ -1,4 +1,5 @@
-import { Convert } from 'pvtsutils';
+import { BufferSourceConverter, Convert } from 'pvtsutils';
+
 import type {
   AlgorithmBinding,
   DecodeSshSignatureParams,
@@ -18,29 +19,47 @@ import type { SshSignatureAlgo } from '../types';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
-export class Ed25519Binding implements AlgorithmBinding {
+export class EcdsaBinding implements AlgorithmBinding {
+  private curveName: string;
+  private sshType: string;
+  private namedCurve: string;
+
+  constructor(curveName: string, sshType: string, namedCurve: string) {
+    this.curveName = curveName;
+    this.sshType = sshType;
+    this.namedCurve = namedCurve;
+  }
+
   async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
 
-    // Skip type (already validated at higher level)
+    // Skip type (already verified in parsePublicKey)
     reader.readString();
 
-    // Read Ed25519 public key using proper SSH format:
-    // uint32 length + byte[length] key_data
-    const keyLength = reader.readUint32();
-    if (keyLength !== 32) {
-      throw new Error(`Invalid Ed25519 key length: ${keyLength}, expected 32`);
+    // Read curve name
+    const curve = reader.readString();
+    if (curve !== this.curveName) {
+      throw new Error(`Invalid curve name: ${curve}, expected ${this.curveName}`);
     }
-    const publicKeyBytes = reader.readBytes(keyLength);
 
-    // Import to WebCrypto
+    // Read Q (public key as mpint)
+    const q = reader.readMpInt();
+
+    // Convert to JWK format
+    const jwk = {
+      kty: 'EC' as const,
+      crv: this.namedCurve,
+      x: Convert.ToBase64Url(q.slice(1, 33)), // x coordinate (32 bytes)
+      y: Convert.ToBase64Url(q.slice(33)), // y coordinate (32 bytes)
+    };
+
     return crypto.subtle.importKey(
-      'raw',
-      publicKeyBytes as any,
+      'jwk',
+      jwk,
       {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
+        name: 'ECDSA',
+        namedCurve: this.namedCurve,
       },
       true,
       ['verify'],
@@ -49,28 +68,38 @@ export class Ed25519Binding implements AlgorithmBinding {
 
   async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
+    const jwk = await crypto.subtle.exportKey('jwk', publicKey);
 
-    // Export from WebCrypto to raw format
-    const rawKey = await crypto.subtle.exportKey('raw', publicKey);
+    if (!jwk.x || !jwk.y) {
+      throw new Error('Invalid JWK');
+    }
 
-    // Create SSH format: type + length + key_data
+    // Decode base64url
+    const x = new Uint8Array(Convert.FromBase64Url(jwk.x));
+    const y = new Uint8Array(Convert.FromBase64Url(jwk.y));
+
+    // Create uncompressed point (0x04 + x + y)
+    const q = new Uint8Array(65);
+    q[0] = 0x04;
+    q.set(x, 1);
+    q.set(y, 33);
+
     const writer = new SshWriter();
-    writer.writeString('ssh-ed25519');
-    writer.writeUint32(rawKey.byteLength);
-    writer.writeBytes(new Uint8Array(rawKey));
+    writer.writeString(this.sshType);
+    writer.writeString(this.curveName);
+    writer.writeMpInt(q);
 
     return writer.toUint8Array();
   }
 
   async importPublicSpki(params: ImportPublicSpkiParams): Promise<CryptoKey> {
     const { spki, crypto } = params;
-
     return crypto.subtle.importKey(
       'spki',
-      spki as any,
+      BufferSourceConverter.toArrayBuffer(spki),
       {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
+        name: 'ECDSA',
+        namedCurve: this.namedCurve,
       },
       true,
       ['verify'],
@@ -79,19 +108,17 @@ export class Ed25519Binding implements AlgorithmBinding {
 
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer> {
     const { publicKey, crypto } = params;
-
     return crypto.subtle.exportKey('spki', publicKey);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
     const { pkcs8, crypto } = params;
-
     return crypto.subtle.importKey(
       'pkcs8',
-      pkcs8 as any,
+      BufferSourceConverter.toArrayBuffer(pkcs8),
       {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
+        name: 'ECDSA',
+        namedCurve: this.namedCurve,
       },
       true,
       ['sign'],
@@ -100,7 +127,6 @@ export class Ed25519Binding implements AlgorithmBinding {
 
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
     const { privateKey, crypto } = params;
-
     return crypto.subtle.exportKey('pkcs8', privateKey);
   }
 
@@ -157,34 +183,43 @@ export class Ed25519Binding implements AlgorithmBinding {
     // Skip key type
     privateReader.readString();
 
-    // Read public key (32 bytes) - this is a length-prefixed field
-    const pubKeyLength = privateReader.readUint32();
-    const _publicKeyBytes = privateReader.readBytes(pubKeyLength);
+    // Read curve name
+    privateReader.readString();
 
-    // Read private key + public key - this is a length-prefixed field
-    const privKeyLength = privateReader.readUint32();
-    const privateKeyBytes = privateReader.readBytes(privKeyLength);
+    // Read public key point
+    const publicKeyPoint = privateReader.readMpInt();
+
+    // Read private key value
+    const privateKeyValue = privateReader.readMpInt();
 
     // Skip comment
     privateReader.readString();
 
-    // Use only the first 32 bytes (private key part)
-    const privateKey = privateKeyBytes.slice(0, 32);
+    // Extract x and y from public key point (uncompressed format: 0x04 + x + y)
+    if (publicKeyPoint[0] !== 0x04) {
+      throw new Error('Invalid public key point format');
+    }
 
-    // Create JWK format for Ed25519
+    // Calculate coordinate length based on curve
+    const coordLength = Math.floor((publicKeyPoint.length - 1) / 2);
+    const x = publicKeyPoint.slice(1, 1 + coordLength);
+    const y = publicKeyPoint.slice(1 + coordLength);
+
+    // Create JWK
     const jwk = {
-      kty: 'OKP' as const,
-      crv: 'Ed25519',
-      d: Convert.ToBase64Url(privateKey),
-      x: Convert.ToBase64Url(_publicKeyBytes),
+      kty: 'EC' as const,
+      crv: this.namedCurve,
+      x: Convert.ToBase64Url(x),
+      y: Convert.ToBase64Url(y),
+      d: Convert.ToBase64Url(privateKeyValue),
     };
 
     return crypto.subtle.importKey(
       'jwk',
       jwk,
       {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
+        name: 'ECDSA',
+        namedCurve: this.namedCurve,
       },
       true,
       ['sign'],
@@ -193,43 +228,54 @@ export class Ed25519Binding implements AlgorithmBinding {
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
     const { privateKey, data, crypto } = params;
-
-    return crypto.subtle.sign('Ed25519', privateKey, data as any);
+    return crypto.subtle.sign(
+      {
+        name: 'ECDSA',
+        hash: 'SHA-256',
+      },
+      privateKey,
+      BufferSourceConverter.toArrayBuffer(data),
+    );
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
     const { publicKey, signature, data, crypto } = params;
-
-    return crypto.subtle.verify('Ed25519', publicKey, signature as any, data as any);
+    return crypto.subtle.verify(
+      {
+        name: 'ECDSA',
+        hash: 'SHA-256',
+      },
+      publicKey,
+      BufferSourceConverter.toArrayBuffer(signature),
+      BufferSourceConverter.toArrayBuffer(data),
+    );
   }
 
   encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array {
     const { signature, algo } = params;
-
-    const sigBytes = new Uint8Array(signature);
     const writer = new SshWriter();
     writer.writeString(algo);
-    writer.writeUint32(sigBytes.length);
-    writer.writeBytes(sigBytes);
+    writer.writeBytes(signature);
     return writer.toUint8Array();
   }
 
   decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
-
     const reader = new SshReader(signature);
     const algo = reader.readString() as SshSignatureAlgo;
-    // Read the length field and then the actual signature
-    const sigLength = reader.readUint32();
-    const sigBytes = reader.readBytes(sigLength);
-
-    return {
-      signature: sigBytes,
-      algo,
-    };
+    const sig = reader.readBytes(reader.remaining());
+    return { signature: sig, algo };
   }
 
   supportsCryptoKey(cryptoKey: CryptoKey): boolean {
-    return cryptoKey.algorithm.name === 'Ed25519';
+    return (
+      cryptoKey.algorithm.name === 'ECDSA' &&
+      (cryptoKey.algorithm as any).namedCurve === this.namedCurve
+    );
   }
 }
+
+// Create instances for each curve
+export const EcdsaP256Binding = new EcdsaBinding('nistp256', 'ecdsa-sha2-nistp256', 'P-256');
+export const EcdsaP384Binding = new EcdsaBinding('nistp384', 'ecdsa-sha2-nistp384', 'P-384');
+export const EcdsaP521Binding = new EcdsaBinding('nistp521', 'ecdsa-sha2-nistp521', 'P-521');
