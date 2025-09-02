@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { testCertNew, testEcdsaCert, testEd25519Cert } from '../../tests/utils/testFixtures';
+import { rsaCertificate, testEcdsaCert, testEd25519Cert } from '../../tests/utils/testFixtures';
 import { SshCertificate } from './certificate';
 
 describe('SshCertificate', () => {
@@ -69,8 +69,8 @@ describe('SshCertificate', () => {
   });
 
   it('should parse real SSH certificate correctly', async () => {
-    // Expected values from ssh-keygen -L output
-    const expectedKeyId = 'test-cert-new';
+    // Expected values from ssh-keygen -L output for rsa.cert
+    const expectedKeyId = 'test-user-rsa';
     const expectedType = 'user';
     const expectedSerial = 0n;
     const expectedPrincipals = ['testuser'];
@@ -83,7 +83,7 @@ describe('SshCertificate', () => {
     };
 
     // Parse certificate
-    const cert = await SshCertificate.fromText(testCertNew);
+    const cert = await SshCertificate.fromText(rsaCertificate);
 
     // Test all fields
     expect(await cert.getKeyId()).toBe(expectedKeyId);
@@ -108,7 +108,7 @@ describe('SshCertificate', () => {
 
     const signatureKey = await cert.getSignatureKey();
     expect(signatureKey).toBeDefined();
-    expect(signatureKey.type).toBe('ssh-rsa');
+    expect(signatureKey.type).toBe('ssh-ed25519');
 
     // Test critical options (should be empty)
     const criticalOptions = await cert.getCriticalOptions();
