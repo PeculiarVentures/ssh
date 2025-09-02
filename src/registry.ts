@@ -31,6 +31,11 @@ export interface ExportPrivatePkcs8Params {
   crypto: CryptoLike;
 }
 
+export interface ImportPrivateFromSshParams {
+  sshKey: string;
+  crypto: CryptoLike;
+}
+
 export interface SignParams {
   privateKey: CryptoKey;
   data: ByteView;
@@ -66,6 +71,7 @@ export interface AlgorithmBinding {
   exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer>;
   importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey>;
   exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer>;
+  importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey>;
 
   sign(params: SignParams): Promise<ArrayBuffer>;
   verify(params: VerifyParams): Promise<boolean>;
@@ -104,6 +110,7 @@ export class AlgorithmRegistry {
 }
 
 // Import and register algorithms
+import { EcdsaP256Binding, EcdsaP384Binding, EcdsaP521Binding } from './algorithms/ecdsa';
 import { Ed25519Binding } from './algorithms/ed25519';
 import { RsaBinding } from './algorithms/rsa';
 
@@ -112,3 +119,8 @@ AlgorithmRegistry.register('ssh-ed25519', new Ed25519Binding());
 
 // Register RSA
 AlgorithmRegistry.register('ssh-rsa', new RsaBinding());
+
+// Register ECDSA
+AlgorithmRegistry.register('ecdsa-sha2-nistp256', EcdsaP256Binding);
+AlgorithmRegistry.register('ecdsa-sha2-nistp384', EcdsaP384Binding);
+AlgorithmRegistry.register('ecdsa-sha2-nistp521', EcdsaP521Binding);

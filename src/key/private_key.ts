@@ -2,6 +2,7 @@ import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
+import { SshReader } from '../wire/reader';
 import { SshPublicKey } from './public_key';
 
 /**
@@ -31,9 +32,54 @@ export class SshPrivateKey {
   /**
    * Import from SSH private key string
    */
-  static async importPrivateFromSsh(_sshKey: string): Promise<SshPrivateKey> {
-    // Placeholder: parse SSH private key format
-    throw new Error('Not implemented: importPrivateFromSsh');
+  static async importPrivateFromSsh(sshKey: string): Promise<SshPrivateKey> {
+    // First, determine the key type from the SSH private key
+    const keyType = await SshPrivateKey.detectSshKeyType(sshKey);
+
+    // Get the appropriate binding
+    const binding = AlgorithmRegistry.get(keyType);
+    if (!binding) {
+      throw new Error(`Unsupported SSH key type: ${keyType}`);
+    }
+
+    // Import using the specific binding
+    const cryptoKey = await binding.importPrivateFromSsh({ sshKey, crypto: getCrypto() });
+    return new SshPrivateKey(cryptoKey, keyType as SshKeyType);
+  }
+
+  /**
+   * Detect SSH key type from OpenSSH private key format
+   */
+  private static async detectSshKeyType(sshKey: string): Promise<string> {
+    // Parse the OpenSSH private key to extract the key type
+    const base64Data = sshKey
+      .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
+      .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
+      .replace(/\s/g, '');
+
+    const binaryData = Convert.FromBase64(base64Data);
+    const reader = new SshReader(binaryData);
+
+    // Check magic string
+    const magic = reader.readBytes(15);
+    if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
+      throw new Error('Invalid OpenSSH private key format');
+    }
+
+    // Skip cipher, kdf, options
+    reader.readString(); // cipher
+    reader.readString(); // kdf
+    reader.readString(); // options
+
+    // Skip number of keys
+    reader.readUint32();
+
+    // Read public key to determine type
+    const publicKeyLength = reader.readUint32();
+    const publicKeyData = reader.readBytes(publicKeyLength);
+    const publicReader = new SshReader(publicKeyData);
+
+    return publicReader.readString(); // This is the key type
   }
 
   /**
