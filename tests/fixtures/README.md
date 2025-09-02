@@ -2,34 +2,15 @@
 
 This directory contains real SSH files used for testing the SSH library. Instead of hardcoding test data as strings in TypeScript files, we store actual SSH keys and certificates as files for better maintainability and realism.
 
-## Structure
-
-```
-fixtures/
-├── README.md
-├── rsa.pub                    # RSA public key
-├── ed25519.pub               # Ed25519 public key
-├── ecdsa-p256.pub           # ECDSA P-256 public key
-├── ecdsa-p384.pub           # ECDSA P-384 public key
-├── ecdsa-p521.pub           # ECDSA P-521 public key
-├── rsa.cert                  # RSA certificate
-├── ed25519.cert             # Ed25519 certificate
-├── ecdsa-p256.cert          # ECDSA P-256 certificate
-├── test-cert-new.cert       # Additional test certificate
-├── test-ed25519-cert.cert   # Ed25519 test certificate
-└── test-ecdsa-cert.cert     # ECDSA test certificate
-```
-
 ## Usage
 
 The fixtures are loaded by `tests/utils/testFixtures.ts` which provides:
 
 - Individual exports for each key/certificate
 - Helper functions like `getAllKeys()` and `getAllCertificates()`
+- PKCS#8 encoded private keys for testing private key import
 
 ## Generating New Fixtures
-
-To add new test fixtures:
 
 1. Generate SSH keys using standard tools:
 
@@ -46,16 +27,26 @@ To add new test fixtures:
    ssh-keygen -t ecdsa -b 521 -f ecdsa-p521 -N ""
    ```
 
-2. Generate certificates using `ssh-keygen` with certificate options:
+2. Convert private keys to PKCS#8 format:
+
+   ```bash
+   ssh-keygen -p -f rsa -m pkcs8 -N ""
+   ssh-keygen -p -f ed25519 -m pkcs8 -N ""
+   ssh-keygen -p -f ecdsa-p256 -m pkcs8 -N ""
+   ssh-keygen -p -f ecdsa-p384 -m pkcs8 -N ""
+   ssh-keygen -p -f ecdsa-p521 -m pkcs8 -N ""
+   ```
+
+3. Generate certificates using `ssh-keygen` with certificate options:
 
    ```bash
    # Create a certificate
    ssh-keygen -s ca_key -I "test-cert" -n "testuser" -V "+52w" user_key.pub
    ```
 
-3. Copy the generated `.pub` files and certificate files directly to `fixtures/`
+4. Copy the generated `.pub` files and certificate files directly to `fixtures/`
 
-4. Update `testFixtures.ts` if needed to include new fixtures
+5. Update `testFixtures.ts` if needed to include new fixtures
 
 ## Benefits
 
@@ -63,3 +54,4 @@ To add new test fixtures:
 - **Maintainability**: Easy to add new test cases by generating real keys/certificates
 - **No duplication**: Single source of truth for test data
 - **Flexibility**: Can easily generate edge cases or specific formats
+- **Security**: Private keys are stored in PKCS#8 format for compatibility with WebCrypto
