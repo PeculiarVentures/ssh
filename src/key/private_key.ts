@@ -3,6 +3,7 @@ import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import { SshReader } from '../wire/reader';
+import { SshWriter } from '../wire/writer';
 import { SshPublicKey } from './public_key';
 
 /**
@@ -116,8 +117,78 @@ export class SshPrivateKey {
     crypto = getCrypto(),
   ): Promise<string | Uint8Array> {
     if (format === 'ssh') {
-      // Placeholder: export to SSH private key format
-      throw new Error('Not implemented: export to SSH format');
+      const binding = AlgorithmRegistry.get(this.type);
+      if (!binding) {
+        throw new Error(`Unsupported key type: ${this.type}`);
+      }
+
+      if (!binding.exportPrivateToSsh) {
+        throw new Error(`SSH export not supported for ${this.type}`);
+      }
+
+      // Export public key blob for the outer structure
+      const publicBlob = await binding.exportPublicToSsh({ publicKey: this.cryptoKey, crypto });
+
+      // Export algorithm-specific private data
+      const privateData = await binding.exportPrivateToSsh({ privateKey: this.cryptoKey, crypto });
+
+      // Build the complete OpenSSH private key structure
+      const writer = new SshWriter();
+
+      // Magic string "openssh-key-v1\0"
+      writer.writeBytes(new TextEncoder().encode('openssh-key-v1\0'));
+
+      // Cipher, KDF, KDF options (unencrypted)
+      writer.writeString('none');
+      writer.writeString('none');
+      writer.writeString('');
+
+      // Number of keys
+      writer.writeUint32(1);
+
+      // Public key
+      writer.writeUint32(publicBlob.length);
+      writer.writeBytes(publicBlob);
+
+      // Private section
+      const privateSectionWriter = new SshWriter();
+
+      // Checkints (two identical random values)
+      const checkint = Math.floor(Math.random() * 0xffffffff) >>> 0;
+      privateSectionWriter.writeUint32(checkint);
+      privateSectionWriter.writeUint32(checkint);
+
+      // Algorithm-specific private data
+      privateSectionWriter.writeBytes(privateData);
+
+      // Comment (empty)
+      privateSectionWriter.writeString('');
+
+      // Padding to make total length multiple of 8
+      const privData = privateSectionWriter.toUint8Array();
+      const blockSize = 8;
+      const padLen = blockSize - (privData.length % blockSize);
+      if (padLen < blockSize) {
+        for (let i = 1; i <= padLen; i++) {
+          privateSectionWriter.writeUint8(i);
+        }
+      }
+
+      const finalPrivData = privateSectionWriter.toUint8Array();
+      writer.writeUint32(finalPrivData.length);
+      writer.writeBytes(finalPrivData);
+
+      // Encode as base64 and wrap in PEM
+      const keyData = writer.toUint8Array();
+      const base64 = Convert.ToBase64(keyData);
+
+      // Split into 70-character lines
+      const lines = [];
+      for (let i = 0; i < base64.length; i += 70) {
+        lines.push(base64.slice(i, i + 70));
+      }
+
+      return `-----BEGIN OPENSSH PRIVATE KEY-----\n${lines.join('\n')}\n-----END OPENSSH PRIVATE KEY-----`;
     } else if (format === 'pkcs8') {
       const binding = AlgorithmRegistry.get(this.type);
       if (!binding) {
@@ -132,8 +203,9 @@ export class SshPrivateKey {
   /**
    * Export to SSH format (convenience method)
    */
-  toSSH(): Promise<string> {
-    throw new Error('Not implemented: export to SSH format');
+  async toSSH(): Promise<string> {
+    const result = await this.export('ssh');
+    return result as string;
   }
 
   /**

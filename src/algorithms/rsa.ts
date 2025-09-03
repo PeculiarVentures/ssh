@@ -6,6 +6,7 @@ import type {
   DecodeSshSignatureResult,
   EncodeSshSignatureParams,
   ExportPrivatePkcs8Params,
+  ExportPrivateToSshParams,
   ExportPublicSpkiParams,
   ExportPublicToSshParams,
   ImportPrivateFromSshParams,
@@ -217,6 +218,36 @@ export class RsaBinding implements AlgorithmBinding {
       true,
       ['sign'],
     );
+  }
+
+  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+    const { privateKey, crypto } = params;
+
+    // Export private key to JWK to obtain all RSA parameters
+    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    if (!jwk.n || !jwk.e || !jwk.d || !jwk.p || !jwk.q) {
+      throw new Error('Invalid RSA JWK');
+    }
+
+    const n = new Uint8Array(Convert.FromBase64Url(jwk.n));
+    const e = new Uint8Array(Convert.FromBase64Url(jwk.e));
+    const d = new Uint8Array(Convert.FromBase64Url(jwk.d));
+    const p = new Uint8Array(Convert.FromBase64Url(jwk.p));
+    const q = new Uint8Array(Convert.FromBase64Url(jwk.q));
+    const qi = jwk.qi ? new Uint8Array(Convert.FromBase64Url(jwk.qi)) : new Uint8Array();
+
+    // Build the private key section as expected by importPrivateFromSsh
+    // Order: ssh-rsa, n, e, d, iqmp, p, q
+    const writer = new SshWriter();
+    writer.writeString('ssh-rsa');
+    writer.writeMpInt(n);
+    writer.writeMpInt(e);
+    writer.writeMpInt(d);
+    writer.writeMpInt(qi);
+    writer.writeMpInt(p);
+    writer.writeMpInt(q);
+
+    return writer.toUint8Array();
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {

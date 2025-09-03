@@ -5,6 +5,7 @@ import type {
   DecodeSshSignatureResult,
   EncodeSshSignatureParams,
   ExportPrivatePkcs8Params,
+  ExportPrivateToSshParams,
   ExportPublicSpkiParams,
   ExportPublicToSshParams,
   ImportPrivateFromSshParams,
@@ -108,6 +109,37 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { privateKey, crypto } = params;
 
     return crypto.subtle.exportKey('pkcs8', privateKey);
+  }
+
+  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+    const { privateKey, crypto } = params;
+
+    // Export private key as JWK to get private scalar
+    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    if (!jwk.d || !jwk.x) {
+      throw new Error('Invalid Ed25519 private key JWK');
+    }
+
+    const privateBytes = new Uint8Array(Convert.FromBase64Url(jwk.d));
+    const publicBytes = new Uint8Array(Convert.FromBase64Url(jwk.x));
+
+    // Build the private key section as expected by importPrivateFromSsh
+    const writer = new SshWriter();
+    writer.writeString('ssh-ed25519');
+
+    // Public key part (32 bytes)
+    writer.writeUint32(publicBytes.length);
+    writer.writeBytes(publicBytes);
+
+    // Private key part (64 bytes: 32-byte private + 32-byte public)
+    const privKeyPart = new Uint8Array(64);
+    privKeyPart.set(privateBytes, 0);
+    privKeyPart.set(publicBytes, 32);
+
+    writer.writeUint32(privKeyPart.length);
+    writer.writeBytes(privKeyPart);
+
+    return writer.toUint8Array();
   }
 
   async importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {

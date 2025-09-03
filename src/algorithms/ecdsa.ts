@@ -6,6 +6,7 @@ import type {
   DecodeSshSignatureResult,
   EncodeSshSignatureParams,
   ExportPrivatePkcs8Params,
+  ExportPrivateToSshParams,
   ExportPublicSpkiParams,
   ExportPublicToSshParams,
   ImportPrivateFromSshParams,
@@ -128,6 +129,36 @@ export class EcdsaBinding implements AlgorithmBinding {
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
     const { privateKey, crypto } = params;
     return crypto.subtle.exportKey('pkcs8', privateKey);
+  }
+
+  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+    const { privateKey, crypto } = params;
+
+    // Export private key to JWK to get all parameters
+    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    if (!jwk.d || !jwk.x || !jwk.y) {
+      throw new Error('Invalid ECDSA JWK');
+    }
+
+    // Decode coordinates
+    const x = new Uint8Array(Convert.FromBase64Url(jwk.x));
+    const y = new Uint8Array(Convert.FromBase64Url(jwk.y));
+    const d = new Uint8Array(Convert.FromBase64Url(jwk.d));
+
+    // Create uncompressed public key point (0x04 + x + y)
+    const publicPoint = new Uint8Array(1 + x.length + y.length);
+    publicPoint[0] = 0x04;
+    publicPoint.set(x, 1);
+    publicPoint.set(y, 1 + x.length);
+
+    // Build the private key section as expected by importPrivateFromSsh
+    const writer = new SshWriter();
+    writer.writeString(this.sshType);
+    writer.writeString(this.curveName);
+    writer.writeMpInt(publicPoint);
+    writer.writeMpInt(d);
+
+    return writer.toUint8Array();
   }
 
   async importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {

@@ -31,6 +31,12 @@ export interface ExportPrivatePkcs8Params {
   crypto: CryptoLike;
 }
 
+export interface ExportPrivateToSshParams {
+  privateKey: CryptoKey;
+  publicKey?: CryptoKey;
+  crypto: CryptoLike;
+}
+
 export interface ImportPrivateFromSshParams {
   sshKey: string;
   crypto: CryptoLike;
@@ -74,6 +80,7 @@ export interface AlgorithmBinding {
   importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey>;
   exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer>;
   importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey>;
+  exportPrivateToSsh?(params: ExportPrivateToSshParams): Promise<Uint8Array>;
 
   sign(params: SignParams): Promise<ArrayBuffer>;
   verify(params: VerifyParams): Promise<boolean>;
