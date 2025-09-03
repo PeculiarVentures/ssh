@@ -30,7 +30,9 @@
   "prettier.requireConfig": true,
   "prettier.configPath": ".prettierrc",
   // Testing settings
-  "testExplorer.useNativeTesting": true,
+  "testExplorer.useNativeTesting": false,
+  "vitest.commandLine": "npm test",
+  "vitest.config": "vitest.config.ts",
   // File associations
   "files.associations": {
     "*.md": "markdown",

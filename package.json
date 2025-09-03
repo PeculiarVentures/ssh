@@ -8,6 +8,8 @@
     "build": "tsc --project tsconfig.build.json",
     "build:check": "tsc --noEmit --project tsconfig.json",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
