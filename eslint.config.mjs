@@ -62,7 +62,7 @@ export default tseslint.config([
             '??': 'after',
             '?': 'before',
             ':': 'before',
-            '|': 'before',
+            '|': 'ignore',
           },
         },
       ],
