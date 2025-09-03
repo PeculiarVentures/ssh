@@ -1,4 +1,5 @@
 import type { CryptoLike } from './crypto';
+import { UnsupportedAlgorithmError } from './errors.js';
 import type { ByteView, SshSignatureAlgo } from './types';
 
 export interface ImportPublicFromSshParams {
@@ -97,8 +98,12 @@ export interface AlgorithmBinding {
 const registry = new Map<string, AlgorithmBinding>();
 
 export class AlgorithmRegistry {
-  static get(name: string): AlgorithmBinding | undefined {
-    return registry.get(name);
+  static get(name: string): AlgorithmBinding {
+    const binding = registry.get(name);
+    if (!binding) {
+      throw new UnsupportedAlgorithmError(`Algorithm '${name}' is not supported`);
+    }
+    return binding;
   }
 
   static register(name: string, binding: AlgorithmBinding): void {
@@ -107,14 +112,17 @@ export class AlgorithmRegistry {
 
   /**
    * Get SSH key type that supports the given WebCrypto CryptoKey
+   * @throws {UnsupportedAlgorithmError} When no algorithm supports the key
    */
-  static getSshTypeFromCryptoKey(cryptoKey: CryptoKey): string | undefined {
+  static getSshTypeFromCryptoKey(cryptoKey: CryptoKey): string {
     for (const [sshType, binding] of registry.entries()) {
       if (binding.supportsCryptoKey(cryptoKey)) {
         return sshType;
       }
     }
-    return undefined;
+    throw new UnsupportedAlgorithmError(
+      `No SSH algorithm found for CryptoKey with algorithm '${cryptoKey.algorithm.name}'`,
+    );
   }
 }
 

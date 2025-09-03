@@ -202,7 +202,9 @@ describe('SshPrivateKey', () => {
 
     // Verify both methods produce valid SSH keys (can be re-imported)
     const fromToSSH = await SshPrivateKey.importPrivateFromSsh(sshString);
-    const fromExport = await SshPrivateKey.importPrivateFromSsh(await key.export('ssh') as string);
+    const fromExport = await SshPrivateKey.importPrivateFromSsh(
+      (await key.export('ssh')) as string,
+    );
 
     expect(fromToSSH.keyType).toBe(fromExport.keyType);
 
@@ -272,7 +274,10 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-256', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(ecdsaP256PrivateKeyPkcs8, 'ecdsa-sha2-nistp256');
+    const key = await SshPrivateKey.importPrivatePkcs8(
+      ecdsaP256PrivateKeyPkcs8,
+      'ecdsa-sha2-nistp256',
+    );
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
@@ -288,7 +293,10 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-384', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(ecdsaP384PrivateKeyPkcs8, 'ecdsa-sha2-nistp384');
+    const key = await SshPrivateKey.importPrivatePkcs8(
+      ecdsaP384PrivateKeyPkcs8,
+      'ecdsa-sha2-nistp384',
+    );
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
@@ -304,7 +312,10 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-521', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(ecdsaP521PrivateKeyPkcs8, 'ecdsa-sha2-nistp521');
+    const key = await SshPrivateKey.importPrivatePkcs8(
+      ecdsaP521PrivateKeyPkcs8,
+      'ecdsa-sha2-nistp521',
+    );
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');

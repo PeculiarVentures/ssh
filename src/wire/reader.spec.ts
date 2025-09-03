@@ -50,6 +50,6 @@ describe('SshReader', () => {
     const data = new Uint8Array([0x01]);
     const reader = new SshReader(data);
     reader.readUint8(); // consume the byte
-    expect(() => reader.readUint8()).toThrow('Buffer underflow');
+    expect(() => reader.readUint8()).toThrow('Unexpected end of data');
   });
 });

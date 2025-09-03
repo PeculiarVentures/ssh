@@ -21,7 +21,7 @@ describe('AlgorithmRegistry', () => {
     expect(AlgorithmRegistry.get('test')).toBe(mockBinding);
   });
 
-  it('should return undefined for unregistered algorithm', () => {
-    expect(AlgorithmRegistry.get('unknown')).toBeUndefined();
+  it('should throw error for unregistered algorithm', () => {
+    expect(() => AlgorithmRegistry.get('unknown')).toThrow(`Algorithm 'unknown' is not supported`);
   });
 });

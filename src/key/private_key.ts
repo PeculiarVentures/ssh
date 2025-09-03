@@ -1,5 +1,6 @@
 import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
+import { EncryptedKeyNotSupportedError, InvalidPrivateKeyFormatError } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import { SshReader } from '../wire/reader';
@@ -51,36 +52,65 @@ export class SshPrivateKey {
   /**
    * Detect SSH key type from OpenSSH private key format
    */
+  /**
+   * Detects the SSH key type from an OpenSSH private key
+   * @param sshKey OpenSSH private key string
+   * @returns SSH key type (e.g., 'ssh-ed25519', 'ssh-rsa', etc.)
+   * @throws {InvalidPrivateKeyFormatError} When key format is invalid
+   * @throws {UnexpectedEOFError} When key data is truncated
+   */
   private static async detectSshKeyType(sshKey: string): Promise<string> {
     // Parse the OpenSSH private key to extract the key type
+    // OpenSSH private key format:
+    // - BEGIN/END markers
+    // - Base64-encoded binary data containing key material
+
     const base64Data = sshKey
       .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
       .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
       .replace(/\s/g, '');
 
-    const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(binaryData);
-
-    // Check magic string
-    const magic = reader.readBytes(15);
-    if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
-      throw new Error('Invalid OpenSSH private key format');
+    let binaryData: Uint8Array;
+    try {
+      binaryData = new Uint8Array(Convert.FromBase64(base64Data));
+    } catch {
+      throw new InvalidPrivateKeyFormatError('Invalid base64 encoding');
     }
 
-    // Skip cipher, kdf, options
-    reader.readString(); // cipher
-    reader.readString(); // kdf
-    reader.readString(); // options
+    const reader = new SshReader(binaryData);
 
-    // Skip number of keys
-    reader.readUint32();
+    // Check magic string "openssh-key-v1\0"
+    const magic = reader.readBytes(15);
+    const expectedMagic = '6f70656e7373682d6b65792d763100';
+    if (Convert.ToHex(magic) !== expectedMagic) {
+      throw new InvalidPrivateKeyFormatError(
+        `Invalid magic bytes. Expected: ${expectedMagic}, got: ${Convert.ToHex(magic)}`,
+      );
+    }
 
-    // Read public key to determine type
+    // Read OpenSSH private key structure:
+    const cipher = reader.readString(); // cipher name
+    const _kdf = reader.readString(); // kdf name
+    reader.readString(); // kdf options (skip)
+
+    // Check if key is encrypted (not supported)
+    if (cipher !== 'none') {
+      throw new EncryptedKeyNotSupportedError(cipher);
+    }
+
+    // Read number of keys (should be 1)
+    const keyCount = reader.readUint32();
+    if (keyCount !== 1) {
+      throw new InvalidPrivateKeyFormatError(`Expected 1 key, found ${keyCount}`);
+    }
+
+    // Read public key data to determine key type
     const publicKeyLength = reader.readUint32();
     const publicKeyData = reader.readBytes(publicKeyLength);
     const publicReader = new SshReader(publicKeyData);
 
-    return publicReader.readString(); // This is the key type
+    // First field in public key data is the key type
+    return publicReader.readString();
   }
 
   /**
