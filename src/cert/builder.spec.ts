@@ -80,17 +80,13 @@ describe('SshCertificateBuilder', () => {
     expect(certificate).toBeInstanceOf(SshCertificate);
 
     // Verify certificate properties
-    const keyId = await certificate.getKeyId();
-    expect(keyId).toBe('test-cert');
+    expect(certificate.keyId).toBe('test-cert');
 
-    const principals = await certificate.getPrincipals();
-    expect(principals).toEqual(['user@example.com']);
+    expect(certificate.principals).toEqual(['user@example.com']);
 
-    const serial = await certificate.getSerial();
-    expect(serial).toBe(123n);
+    expect(certificate.serial).toBe(123n);
 
-    const type = await certificate.getType();
-    expect(type).toBe('user');
+    expect(certificate.certType).toBe('user');
 
     // Verify signature
     const isValid = await certificate.verify(caPublicKey);
