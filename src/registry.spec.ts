@@ -10,6 +10,7 @@ describe('AlgorithmRegistry', () => {
       exportPublicSpki: vi.fn(),
       importPrivatePkcs8: vi.fn(),
       exportPrivatePkcs8: vi.fn(),
+      importPrivateFromSsh: vi.fn(),
       sign: vi.fn(),
       verify: vi.fn(),
       encodeSshSignature: vi.fn(),

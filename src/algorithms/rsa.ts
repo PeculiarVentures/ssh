@@ -20,6 +20,12 @@ import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
 export class RsaBinding implements AlgorithmBinding {
+  private hash = 'SHA-256';
+
+  constructor(hash = 'SHA-256') {
+    this.hash = hash;
+  }
+
   async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
@@ -45,7 +51,7 @@ export class RsaBinding implements AlgorithmBinding {
       jwk,
       {
         name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
+        hash: this.hash,
       },
       true,
       ['verify'],
@@ -79,7 +85,7 @@ export class RsaBinding implements AlgorithmBinding {
       BufferSourceConverter.toArrayBuffer(spki),
       {
         name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
+        hash: this.hash,
       },
       true,
       ['verify'],
@@ -98,7 +104,7 @@ export class RsaBinding implements AlgorithmBinding {
       BufferSourceConverter.toArrayBuffer(pkcs8),
       {
         name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
+        hash: this.hash,
       },
       true,
       ['sign'],
@@ -206,7 +212,7 @@ export class RsaBinding implements AlgorithmBinding {
       jwk,
       {
         name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
+        hash: this.hash,
       },
       true,
       ['sign'],
@@ -214,19 +220,35 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
-    const { privateKey, data, crypto } = params;
+    const { privateKey, data, crypto, hash = this.hash } = params;
+
+    // If the key's hash doesn't match the requested hash, re-import it
+    let keyToUse = privateKey;
+    if (hash !== this.hash) {
+      const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
+      keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
+    }
+
     return crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
-      privateKey,
+      keyToUse,
       BufferSourceConverter.toArrayBuffer(data),
     );
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
-    const { publicKey, signature, data, crypto } = params;
+    const { publicKey, signature, data, crypto, hash = this.hash } = params;
+
+    // If the key's hash doesn't match the requested hash, re-import it
+    let keyToUse = publicKey;
+    if (hash !== this.hash) {
+      const spki = await this.exportPublicSpki({ publicKey, crypto });
+      keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
+    }
+
     return crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',
-      publicKey,
+      keyToUse,
       BufferSourceConverter.toArrayBuffer(signature),
       BufferSourceConverter.toArrayBuffer(data),
     );

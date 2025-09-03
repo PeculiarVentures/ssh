@@ -79,10 +79,10 @@ export class EcdsaBinding implements AlgorithmBinding {
     const y = new Uint8Array(Convert.FromBase64Url(jwk.y));
 
     // Create uncompressed point (0x04 + x + y)
-    const q = new Uint8Array(65);
+    const q = new Uint8Array(1 + x.length + y.length);
     q[0] = 0x04;
     q.set(x, 1);
-    q.set(y, 33);
+    q.set(y, 1 + x.length);
 
     const writer = new SshWriter();
     writer.writeString(this.sshType);

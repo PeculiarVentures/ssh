@@ -46,6 +46,13 @@ export class SshCertificate {
   }
 
   /**
+   * Export to SSH format (convenience method)
+   */
+  toSSH(): string {
+    return this.toText();
+  }
+
+  /**
    * Export to blob
    */
   toBlob(): SshCertificateBlob {
@@ -73,6 +80,16 @@ export class SshCertificate {
   }
 
   /**
+   * Get key ID (synchronous convenience method)
+   */
+  get keyId(): string {
+    if (!this.data) {
+      throw new Error('Certificate data not parsed. Call an async method first.');
+    }
+    return this.data.keyId;
+  }
+
+  /**
    * Get valid principals
    */
   async getPrincipals(): Promise<string[]> {
@@ -81,6 +98,16 @@ export class SshCertificate {
     }
     if (!this.data) {
       throw new Error('Failed to parse certificate data');
+    }
+    return this.data.validPrincipals;
+  }
+
+  /**
+   * Get valid principals (synchronous convenience method)
+   */
+  get principals(): string[] {
+    if (!this.data) {
+      throw new Error('Certificate data not parsed. Call an async method first.');
     }
     return this.data.validPrincipals;
   }
@@ -96,6 +123,27 @@ export class SshCertificate {
       throw new Error('Failed to parse certificate data');
     }
     return this.data.type;
+  }
+
+  /**
+   * Get certificate type (synchronous convenience method)
+   */
+  get certType(): SshCertificateType {
+    if (!this.data) {
+      throw new Error('Certificate data not parsed. Call an async method first.');
+    }
+    return this.data.type;
+  }
+
+  /**
+   * Check if certificate is currently valid (synchronous convenience method)
+   */
+  get isValid(): boolean {
+    if (!this.data) {
+      throw new Error('Certificate data not parsed. Call an async method first.');
+    }
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    return now >= this.data.validAfter && now <= this.data.validBefore;
   }
 
   /**

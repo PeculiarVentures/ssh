@@ -89,4 +89,34 @@ describe('SshPrivateKey', () => {
     const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP521PrivateKeySsh);
     expect(key.keyType).toBe('ecdsa-sha2-nistp521');
   });
+
+  it('should have convenience methods', async () => {
+    const key = await SshPrivateKey.importPrivateFromSsh(ed25519PrivateKeySsh);
+
+    // Test convenience export methods
+    expect(typeof key.toWebCrypto).toBe('function');
+    expect(typeof key.toPKCS8).toBe('function');
+    expect(typeof key.getPublicKey).toBe('function');
+    expect(typeof key.signData).toBe('function');
+
+    // Test WebCrypto method
+    const cryptoKey = key.toWebCrypto();
+    expect(cryptoKey).toBeDefined();
+    expect(cryptoKey.type).toBe('private');
+
+    // Test PKCS#8 export
+    const pkcs8 = await key.toPKCS8();
+    expect(pkcs8).toBeInstanceOf(Uint8Array);
+    expect(pkcs8.length).toBeGreaterThan(0);
+
+    // Test getting public key
+    const publicKey = await key.getPublicKey();
+    expect(publicKey.type).toBe('ssh-ed25519');
+
+    // Test signing with convenience method
+    const testData = new Uint8Array([1, 2, 3, 4, 5]);
+    const signature = await key.signData(testData);
+    expect(typeof signature).toBe('string');
+    expect(signature.length).toBeGreaterThan(0);
+  });
 });

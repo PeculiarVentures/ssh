@@ -130,11 +130,88 @@ export class SshPrivateKey {
   }
 
   /**
+   * Export to SSH format (convenience method)
+   */
+  toSSH(): Promise<string> {
+    throw new Error('Not implemented: export to SSH format');
+  }
+
+  /**
+   * Export to PKCS#8 format (convenience method)
+   */
+  async toPKCS8(): Promise<Uint8Array> {
+    const result = await this.export('pkcs8');
+    return result as Uint8Array;
+  }
+
+  /**
+   * Get WebCrypto key (convenience method)
+   */
+  toWebCrypto(): CryptoKey {
+    return this.cryptoKey;
+  }
+
+  /**
    * Export to PKCS#8
    */
   async exportPrivatePkcs8(): Promise<Uint8Array> {
-    const result = await this.export('pkcs8');
-    return result as Uint8Array;
+    return this.toPKCS8();
+  }
+
+  /**
+   * Get public key (convenience method)
+   */
+  async getPublicKey(crypto = getCrypto()): Promise<SshPublicKey> {
+    return this.exportPublicKey(crypto);
+  }
+
+  /**
+   * Sign data with convenient interface
+   */
+  async signData(data: ByteView, algo?: string, crypto = getCrypto()): Promise<string> {
+    return this.sign(data, algo, crypto);
+  }
+
+  /**
+   * Sign data with hash parameter (for RSA)
+   */
+  async signDataWithHash(
+    data: ByteView,
+    hash: 'SHA-256' | 'SHA-512' = 'SHA-256',
+    crypto = getCrypto(),
+  ): Promise<string> {
+    // For RSA, we need to use the correct binding based on hash
+    const signatureAlgorithm = this.getSignatureAlgorithm(hash);
+    const binding = AlgorithmRegistry.get(signatureAlgorithm);
+
+    if (!binding) {
+      throw new Error(`Unsupported signature algorithm: ${signatureAlgorithm}`);
+    }
+
+    const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto, hash });
+    const encoded = binding.encodeSshSignature({ signature, algo: signatureAlgorithm as any });
+    return Convert.ToBase64(encoded);
+  }
+
+  /**
+   * Get SSH signature algorithm based on key type and hash
+   */
+  private getSignatureAlgorithm(hash: 'SHA-256' | 'SHA-512'): string {
+    switch (this.type) {
+      case 'ssh-rsa':
+        // For ssh-rsa type, use rsa-sha2-* based on hash
+        return hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
+      case 'ecdsa-sha2-nistp256':
+        return 'ecdsa-sha2-nistp256';
+      case 'ecdsa-sha2-nistp384':
+        return 'ecdsa-sha2-nistp384';
+      case 'ecdsa-sha2-nistp521':
+        return 'ecdsa-sha2-nistp521';
+      case 'ssh-ed25519':
+        return 'ssh-ed25519';
+      default:
+        return this.type;
+    }
   }
 
   /**

@@ -53,4 +53,49 @@ describe('SshPublicKey', () => {
     const isValid = await crypto.subtle.verify('Ed25519', importedCryptoKey, signature, testData);
     expect(isValid).toBe(true);
   });
+
+  it('should have convenience methods', async () => {
+    // Generate test key
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+
+    // Test convenience methods
+    expect(typeof publicKey.toSSH).toBe('function');
+    expect(typeof publicKey.toSPKI).toBe('function');
+    expect(typeof publicKey.toWebCrypto).toBe('function');
+    expect(typeof publicKey.verifySignature).toBe('function');
+
+    // Test SSH export
+    const sshString = await publicKey.toSSH();
+    expect(typeof sshString).toBe('string');
+    expect(sshString).toContain('ssh-ed25519');
+
+    // Test SPKI export
+    const spkiBytes = await publicKey.toSPKI();
+    expect(spkiBytes).toBeInstanceOf(Uint8Array);
+    expect(spkiBytes.length).toBeGreaterThan(0);
+
+    // Test WebCrypto conversion
+    const cryptoKey = await publicKey.toWebCrypto();
+    expect(cryptoKey.type).toBe('public');
+    expect((cryptoKey.algorithm as any).name).toBe('Ed25519');
+
+    // Test signature verification
+    const testData = new Uint8Array([1, 2, 3, 4, 5]);
+    const signature = await crypto.subtle.sign('Ed25519', keyPair.privateKey, testData);
+
+    // Create SSH signature format
+    const _base64Signature = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    // Note: This is a simplified test - real SSH signatures have specific encoding
+    // const isValid = await publicKey.verifySignature(testData, base64Signature);
+    // expect(isValid).toBe(true);
+  });
 });

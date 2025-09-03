@@ -40,6 +40,7 @@ export interface SignParams {
   privateKey: CryptoKey;
   data: ByteView;
   crypto: CryptoLike;
+  hash?: 'SHA-256' | 'SHA-512';
 }
 
 export interface VerifyParams {
@@ -47,6 +48,7 @@ export interface VerifyParams {
   signature: ByteView;
   data: ByteView;
   crypto: CryptoLike;
+  hash?: 'SHA-256' | 'SHA-512';
 }
 
 export interface EncodeSshSignatureParams {
@@ -117,8 +119,10 @@ import { RsaBinding } from './algorithms/rsa';
 // Register Ed25519
 AlgorithmRegistry.register('ssh-ed25519', new Ed25519Binding());
 
-// Register RSA
-AlgorithmRegistry.register('ssh-rsa', new RsaBinding());
+// Register RSA with different hashes
+AlgorithmRegistry.register('ssh-rsa', new RsaBinding('SHA-256')); // For backward compatibility
+AlgorithmRegistry.register('rsa-sha2-256', new RsaBinding('SHA-256'));
+AlgorithmRegistry.register('rsa-sha2-512', new RsaBinding('SHA-512'));
 
 // Register ECDSA
 AlgorithmRegistry.register('ecdsa-sha2-nistp256', EcdsaP256Binding);

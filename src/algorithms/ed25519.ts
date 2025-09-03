@@ -50,14 +50,20 @@ export class Ed25519Binding implements AlgorithmBinding {
   async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
 
-    // Export from WebCrypto to raw format
-    const rawKey = await crypto.subtle.exportKey('raw', publicKey);
+    // Export from WebCrypto to JWK format first, then extract the key
+    const jwk = await crypto.subtle.exportKey('jwk', publicKey);
+    if (!jwk.x) {
+      throw new Error('Invalid Ed25519 JWK');
+    }
+
+    // Convert base64url to bytes
+    const keyBytes = new Uint8Array(Convert.FromBase64Url(jwk.x));
 
     // Create SSH format: type + length + key_data
     const writer = new SshWriter();
     writer.writeString('ssh-ed25519');
-    writer.writeUint32(rawKey.byteLength);
-    writer.writeBytes(new Uint8Array(rawKey));
+    writer.writeUint32(keyBytes.length);
+    writer.writeBytes(keyBytes);
 
     return writer.toUint8Array();
   }

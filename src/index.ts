@@ -15,3 +15,6 @@ export * from './key';
 
 // Certificate classes
 export * from './cert';
+
+// Unified SSH API
+export { SSH, type ImportOptions, type KeyPairResult } from './ssh';
