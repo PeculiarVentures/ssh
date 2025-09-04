@@ -213,7 +213,23 @@ export class SSH {
 
     // Binary data - assume PKCS#8 or SPKI based on content analysis
     // This is a simplified heuristic
-    return 'pkcs8';
+    const buffer: Uint8Array =
+      data instanceof ArrayBuffer ? new Uint8Array(data) : (data as Uint8Array);
+    if (buffer.length < 4 || buffer[0] !== 0x30) {
+      return 'pkcs8'; // Fallback for invalid or too short data
+    }
+    // Parse SEQUENCE length (assume short form for simplicity)
+    let seqLen: number;
+    if (buffer[1] < 128) {
+      seqLen = buffer[1];
+    } else {
+      return 'pkcs8'; // Long form, fallback
+    }
+    if (2 + seqLen >= buffer.length) {
+      return 'pkcs8'; // Invalid length
+    }
+    const nextTag = buffer[2 + seqLen];
+    return nextTag === 0x02 ? 'pkcs8' : 'spki';
   }
 
   /**
