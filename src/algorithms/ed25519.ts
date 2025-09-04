@@ -296,4 +296,8 @@ export class Ed25519Binding implements AlgorithmBinding {
   getCertificateType(): string {
     return 'ssh-ed25519-cert-v01@openssh.com';
   }
+
+  getSignatureAlgo(): SshSignatureAlgo {
+    return 'ssh-ed25519';
+  }
 }

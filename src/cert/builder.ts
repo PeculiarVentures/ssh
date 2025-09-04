@@ -2,32 +2,9 @@ import { getCrypto, type CryptoLike } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
-import type { SshKeyType, SshSignatureAlgo } from '../types';
+import type { SshKeyType } from '../types';
 import { createCertificateData } from '../wire/certificate';
 import { SshCertificate } from './certificate';
-
-function getSignatureAlgo(keyType: SshKeyType): SshSignatureAlgo {
-  switch (keyType) {
-    case 'ssh-ed25519':
-      return 'ssh-ed25519';
-    case 'ssh-rsa':
-      return 'rsa-sha2-256'; // Default RSA signature algorithm
-    case 'ecdsa-sha2-nistp256':
-      return 'ecdsa-sha2-nistp256';
-    case 'ecdsa-sha2-nistp384':
-      return 'ecdsa-sha2-nistp384';
-    case 'ecdsa-sha2-nistp521':
-      return 'ecdsa-sha2-nistp521';
-    default:
-      throw new UnsupportedKeyTypeError(keyType, [
-        'ssh-ed25519',
-        'ssh-rsa',
-        'ecdsa-sha2-nistp256',
-        'ecdsa-sha2-nistp384',
-        'ecdsa-sha2-nistp521',
-      ]);
-  }
-}
 
 export interface SshCertificateInit {
   publicKey: SshPublicKey;
@@ -240,7 +217,7 @@ export class SshCertificateBuilder {
       privateKey,
       certDataWithSignatureKey as any,
     );
-    const signatureAlgo = getSignatureAlgo(signatureKey.type);
+    const signatureAlgo = signatureKeyBinding.getSignatureAlgo();
     const encodedSignature = signatureKeyBinding.encodeSshSignature({
       signature: new Uint8Array(signature),
       algo: signatureAlgo,
@@ -265,7 +242,7 @@ export class SshCertificateBuilder {
 
     // Create certificate blob
     const binding = AlgorithmRegistry.get(this.publicKey.type);
-    const certType = binding.getCertificateType?.() || this.getCertificateType();
+    const certType = binding.getCertificateType();
 
     const certBlob = {
       type: certType as SshKeyType,
@@ -273,31 +250,5 @@ export class SshCertificateBuilder {
     };
 
     return SshCertificate.fromBlob(certBlob);
-  }
-
-  /**
-   * Get certificate type string
-   */
-  private getCertificateType(): string {
-    switch (this.publicKey.type) {
-      case 'ssh-ed25519':
-        return 'ssh-ed25519-cert-v01@openssh.com';
-      case 'ssh-rsa':
-        return 'ssh-rsa-cert-v01@openssh.com';
-      case 'ecdsa-sha2-nistp256':
-        return 'ecdsa-sha2-nistp256-cert-v01@openssh.com';
-      case 'ecdsa-sha2-nistp384':
-        return 'ecdsa-sha2-nistp384-cert-v01@openssh.com';
-      case 'ecdsa-sha2-nistp521':
-        return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
-      default:
-        throw new UnsupportedKeyTypeError(this.publicKey.type, [
-          'ssh-ed25519',
-          'ssh-rsa',
-          'ecdsa-sha2-nistp256',
-          'ecdsa-sha2-nistp384',
-          'ecdsa-sha2-nistp521',
-        ]);
-    }
   }
 }

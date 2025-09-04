@@ -336,6 +336,10 @@ export class EcdsaBinding implements AlgorithmBinding {
   getCertificateType(): string {
     return `${this.sshType}-cert-v01@openssh.com`;
   }
+
+  getSignatureAlgo(): SshSignatureAlgo {
+    return this.sshType as SshSignatureAlgo;
+  }
 }
 
 // Create instances for each curve

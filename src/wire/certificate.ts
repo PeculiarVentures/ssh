@@ -89,12 +89,6 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 
   // Get the algorithm binding and parse the public key
   const binding = AlgorithmRegistry.get(mappedKeyType);
-  if (!binding.parseCertificatePublicKey) {
-    throw new UnsupportedAlgorithmError(mappedKeyType, [
-      'algorithms with certificate parsing support',
-    ]);
-  }
-
   const publicKey = binding.parseCertificatePublicKey(reader);
   const keyType = mappedKeyType;
 
@@ -351,29 +345,5 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
 
 function getCertificateType(keyType: string): string {
   const binding = AlgorithmRegistry.get(keyType);
-  if (binding.getCertificateType) {
-    return binding.getCertificateType();
-  }
-
-  // Fallback for bindings that don't implement getCertificateType
-  switch (keyType) {
-    case 'ssh-ed25519':
-      return 'ssh-ed25519-cert-v01@openssh.com';
-    case 'ssh-rsa':
-      return 'ssh-rsa-cert-v01@openssh.com';
-    case 'ecdsa-sha2-nistp256':
-      return 'ecdsa-sha2-nistp256-cert-v01@openssh.com';
-    case 'ecdsa-sha2-nistp384':
-      return 'ecdsa-sha2-nistp384-cert-v01@openssh.com';
-    case 'ecdsa-sha2-nistp521':
-      return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
-    default:
-      throw new UnsupportedKeyTypeError(keyType, [
-        'ssh-ed25519',
-        'ssh-rsa',
-        'ecdsa-sha2-nistp256',
-        'ecdsa-sha2-nistp384',
-        'ecdsa-sha2-nistp521',
-      ]);
-  }
+  return binding.getCertificateType();
 }

@@ -97,17 +97,23 @@ export interface AlgorithmBinding {
   supportsCryptoKey(cryptoKey: CryptoKey): boolean;
 
   /**
-   * Parse public key from certificate format (optional)
+   * Parse public key from certificate format
    * @param reader - SshReader positioned at public key data in certificate
    * @returns SshPublicKeyBlob in standard SSH format
    */
-  parseCertificatePublicKey?(reader: SshReader): SshPublicKeyBlob;
+  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob;
 
   /**
-   * Get certificate type for this algorithm (optional)
+   * Get certificate type for this algorithm
    * @returns Certificate type string (e.g., 'ssh-rsa-cert-v01@openssh.com')
    */
-  getCertificateType?(): string;
+  getCertificateType(): string;
+
+  /**
+   * Get signature algorithm for this algorithm
+   * @returns Signature algorithm string (e.g., 'ssh-ed25519', 'rsa-sha2-256')
+   */
+  getSignatureAlgo(): SshSignatureAlgo;
 }
 
 const registry = new Map<string, AlgorithmBinding>();

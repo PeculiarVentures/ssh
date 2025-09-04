@@ -331,4 +331,8 @@ export class RsaBinding implements AlgorithmBinding {
   getCertificateType(): string {
     return 'ssh-rsa-cert-v01@openssh.com';
   }
+
+  getSignatureAlgo(): SshSignatureAlgo {
+    return this.hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
+  }
 }
