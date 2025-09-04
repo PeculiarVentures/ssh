@@ -70,7 +70,8 @@ export class SshCertificate {
   }
 
   /**
-   * Export to SSH format (convenience method)
+   * Export to SSH format (convenience method).
+   * Returns a base64-encoded string in SSH certificate format.
    */
   toSSH(): string {
     return this.toText();

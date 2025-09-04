@@ -102,7 +102,9 @@ export class SshPublicKey {
   }
 
   /**
-   * Export to SSH format (convenience method)
+   * Export to SSH format (convenience method).
+   * Returns a base64-encoded string in SSH public key format
+   * (e.g., "ssh-rsa AAAAB3NzaC1yc2E...").
    */
   async toSSH(): Promise<string> {
     const result = await this.export('ssh');
@@ -110,7 +112,8 @@ export class SshPublicKey {
   }
 
   /**
-   * Export to SPKI format (convenience method)
+   * Export to SPKI format (convenience method).
+   * Returns binary DER-encoded SPKI data as Uint8Array.
    */
   async toSPKI(): Promise<Uint8Array> {
     const result = await this.export('spki');

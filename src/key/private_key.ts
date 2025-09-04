@@ -236,7 +236,9 @@ export class SshPrivateKey {
   }
 
   /**
-   * Export to SSH format (convenience method)
+   * Export to SSH format (convenience method).
+   * Returns a base64-encoded string in OpenSSH private key format
+   * (e.g., "-----BEGIN OPENSSH PRIVATE KEY-----\n...").
    */
   async toSSH(): Promise<string> {
     const result = await this.export('ssh');
@@ -244,7 +246,8 @@ export class SshPrivateKey {
   }
 
   /**
-   * Export to PKCS#8 format (convenience method)
+   * Export to PKCS#8 format (convenience method).
+   * Returns binary DER-encoded PKCS#8 data as Uint8Array.
    */
   async toPKCS8(): Promise<Uint8Array> {
     const result = await this.export('pkcs8');
