@@ -212,11 +212,11 @@ export class SshCertificateBuilder {
     });
 
     // Create signature
-    const signature = await crypto.subtle.sign(
-      'Ed25519',
+    const signature = await signatureKeyBinding.sign({
       privateKey,
-      certDataWithSignatureKey as any,
-    );
+      data: certDataWithSignatureKey,
+      crypto,
+    });
     const signatureAlgo = signatureKeyBinding.getSignatureAlgo();
     const encodedSignature = signatureKeyBinding.encodeSshSignature({
       signature: new Uint8Array(signature),
