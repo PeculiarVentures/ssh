@@ -1,6 +1,8 @@
 import type { CryptoLike } from './crypto';
 import { UnsupportedAlgorithmError } from './errors.js';
 import type { ByteView, SshSignatureAlgo } from './types';
+import type { SshPublicKeyBlob } from './wire/public_key';
+import { SshReader } from './wire/reader';
 
 export interface ImportPublicFromSshParams {
   blob: Uint8Array;
@@ -93,6 +95,19 @@ export interface AlgorithmBinding {
    * Check if this binding supports the given WebCrypto CryptoKey
    */
   supportsCryptoKey(cryptoKey: CryptoKey): boolean;
+
+  /**
+   * Parse public key from certificate format (optional)
+   * @param reader - SshReader positioned at public key data in certificate
+   * @returns SshPublicKeyBlob in standard SSH format
+   */
+  parseCertificatePublicKey?(reader: SshReader): SshPublicKeyBlob;
+
+  /**
+   * Get certificate type for this algorithm (optional)
+   * @returns Certificate type string (e.g., 'ssh-rsa-cert-v01@openssh.com')
+   */
+  getCertificateType?(): string;
 }
 
 const registry = new Map<string, AlgorithmBinding>();
@@ -101,7 +116,7 @@ export class AlgorithmRegistry {
   static get(name: string): AlgorithmBinding {
     const binding = registry.get(name);
     if (!binding) {
-      throw new UnsupportedAlgorithmError(`Algorithm '${name}' is not supported`);
+      throw new UnsupportedAlgorithmError(name);
     }
     return binding;
   }
@@ -120,9 +135,23 @@ export class AlgorithmRegistry {
         return sshType;
       }
     }
-    throw new UnsupportedAlgorithmError(
-      `No SSH algorithm found for CryptoKey with algorithm '${cryptoKey.algorithm.name}'`,
-    );
+    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
+  }
+
+  /**
+   * Map certificate type to SSH key type
+   * @param certType Certificate type (e.g., 'ssh-rsa-cert-v01@openssh.com')
+   * @returns SSH key type (e.g., 'ssh-rsa') or undefined if not supported
+   */
+  static certTypeToKeyType(certType: string): string | undefined {
+    const mapping: Record<string, string> = {
+      'ssh-rsa-cert-v01@openssh.com': 'ssh-rsa',
+      'ssh-ed25519-cert-v01@openssh.com': 'ssh-ed25519',
+      'ecdsa-sha2-nistp256-cert-v01@openssh.com': 'ecdsa-sha2-nistp256',
+      'ecdsa-sha2-nistp384-cert-v01@openssh.com': 'ecdsa-sha2-nistp384',
+      'ecdsa-sha2-nistp521-cert-v01@openssh.com': 'ecdsa-sha2-nistp521',
+    };
+    return mapping[certType];
   }
 }
 

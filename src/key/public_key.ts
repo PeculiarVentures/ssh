@@ -1,5 +1,6 @@
 import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
+import { UnsupportedAlgorithmError, UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import {
@@ -14,7 +15,7 @@ import {
 function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
   const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
   if (!sshType) {
-    throw new Error(`Unsupported algorithm: ${(cryptoKey.algorithm as any).name}`);
+    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
   }
   return sshType as SshKeyType;
 }
@@ -32,7 +33,7 @@ export class SshPublicKey {
     const blob = parseWirePublicKey(sshKey);
     const binding = AlgorithmRegistry.get(blob.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${blob.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${blob.type}`);
     }
 
     // Validate that the key can be imported (but don't store CryptoKey)
@@ -47,7 +48,7 @@ export class SshPublicKey {
   ): Promise<SshPublicKey> {
     const binding = AlgorithmRegistry.get(type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${type}`);
     }
 
     const cryptoKey = await binding.importPublicSpki({ spki, crypto });
@@ -70,7 +71,7 @@ export class SshPublicKey {
 
     const binding = AlgorithmRegistry.get(sshType);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${sshType}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${sshType}`);
     }
 
     const exported = await binding.exportPublicToSsh({ publicKey: cryptoKey, crypto });
@@ -91,13 +92,13 @@ export class SshPublicKey {
     } else if (format === 'spki') {
       const binding = AlgorithmRegistry.get(this.blob.type);
       if (!binding) {
-        throw new Error(`Unsupported key type: ${this.blob.type}`);
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
       }
       const cryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
       const spki = await binding.exportPublicSpki({ publicKey: cryptoKey, crypto });
       return new Uint8Array(spki);
     }
-    throw new Error(`Unsupported export format: ${format}`);
+    throw new UnsupportedKeyTypeError(`Unsupported export format: ${format}`);
   }
 
   /**
@@ -136,7 +137,7 @@ export class SshPublicKey {
   async verifySignature(data: ByteView, signature: string, crypto = getCrypto()): Promise<boolean> {
     const binding = AlgorithmRegistry.get(this.blob.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${this.blob.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
     }
 
     // Decode base64 signature
@@ -164,7 +165,7 @@ export class SshPublicKey {
   ): Promise<boolean> {
     const binding = AlgorithmRegistry.get(this.blob.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${this.blob.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
     }
 
     // Decode base64 signature
@@ -196,7 +197,7 @@ export class SshPublicKey {
       case 'ecdsa-sha2-nistp521':
         return 'ecdsa-sha2-nistp521';
       default:
-        throw new Error(`Unsupported key type: ${this.blob.type}`);
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
     }
   }
 
@@ -206,7 +207,7 @@ export class SshPublicKey {
   async toCryptoKey(crypto = getCrypto()): Promise<CryptoKey> {
     const binding = AlgorithmRegistry.get(this.blob.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${this.blob.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
     }
     return binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
   }

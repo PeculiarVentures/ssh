@@ -1,6 +1,7 @@
 import { SshCertificateBuilder } from './cert/builder';
 import { SshCertificate } from './cert/certificate';
 import { getCrypto } from './crypto';
+import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from './errors';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import type { ByteView, SshKeyType } from './types';
@@ -61,18 +62,18 @@ export class SSH {
 
       case 'pkcs8':
         if (!type) {
-          throw new Error('Key type must be specified for PKCS#8 import');
+          throw new UnsupportedKeyTypeError('Key type must be specified for PKCS#8 import');
         }
         return SshPrivateKey.importPrivatePkcs8(data as ByteView, type, crypto);
 
       case 'spki':
         if (!type) {
-          throw new Error('Key type must be specified for SPKI import');
+          throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
         }
         return SshPublicKey.importPublicSpki(data as ByteView, type, crypto);
 
       default:
-        throw new Error(`Unsupported format: ${format}`);
+        throw new InvalidFormatError(`Unsupported format: ${format}`);
     }
   }
 
@@ -161,7 +162,7 @@ export class SSH {
       }
 
       default:
-        throw new Error(`Unsupported algorithm: ${(alg as any).name}`);
+        throw new UnsupportedAlgorithmError(alg.name);
     }
 
     const privateKey = await SshPrivateKey.fromWebCrypto(keyPair.privateKey, sshType);
@@ -240,6 +241,6 @@ export class SSH {
       return SshPublicKey.importPublicFromSsh(data, crypto);
     }
 
-    throw new Error('Unable to detect SSH format type');
+    throw new InvalidFormatError('Unable to detect SSH format type');
   }
 }

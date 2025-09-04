@@ -1,8 +1,13 @@
 import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
-import { EncryptedKeyNotSupportedError, InvalidPrivateKeyFormatError } from '../errors.js';
+import {
+  EncryptedKeyNotSupportedError,
+  InvalidPrivateKeyFormatError,
+  UnsupportedAlgorithmError,
+  UnsupportedKeyTypeError,
+} from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
-import type { ByteView, SshKeyType } from '../types';
+import type { ByteView, SshKeyType, SshSignatureAlgo } from '../types';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 import { SshPublicKey } from './public_key';
@@ -13,7 +18,7 @@ import { SshPublicKey } from './public_key';
 function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
   const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
   if (!sshType) {
-    throw new Error(`Unsupported algorithm: ${(cryptoKey.algorithm as any).name}`);
+    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
   }
   return sshType as SshKeyType;
 }
@@ -41,7 +46,7 @@ export class SshPrivateKey {
     // Get the appropriate binding
     const binding = AlgorithmRegistry.get(keyType);
     if (!binding) {
-      throw new Error(`Unsupported SSH key type: ${keyType}`);
+      throw new UnsupportedKeyTypeError(`Unsupported SSH key type: ${keyType}`);
     }
 
     // Import using the specific binding
@@ -123,7 +128,7 @@ export class SshPrivateKey {
   ): Promise<SshPrivateKey> {
     const binding = AlgorithmRegistry.get(type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${type}`);
     }
 
     const cryptoKey = await binding.importPrivatePkcs8({ pkcs8, crypto });
@@ -149,11 +154,11 @@ export class SshPrivateKey {
     if (format === 'ssh') {
       const binding = AlgorithmRegistry.get(this.type);
       if (!binding) {
-        throw new Error(`Unsupported key type: ${this.type}`);
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
       }
 
       if (!binding.exportPrivateToSsh) {
-        throw new Error(`SSH export not supported for ${this.type}`);
+        throw new UnsupportedKeyTypeError(`SSH export not supported for ${this.type}`);
       }
 
       // Export public key blob for the outer structure
@@ -222,12 +227,12 @@ export class SshPrivateKey {
     } else if (format === 'pkcs8') {
       const binding = AlgorithmRegistry.get(this.type);
       if (!binding) {
-        throw new Error(`Unsupported key type: ${this.type}`);
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
       }
       const pkcs8 = await binding.exportPrivatePkcs8({ privateKey: this.cryptoKey, crypto });
       return new Uint8Array(pkcs8);
     }
-    throw new Error(`Unsupported export format: ${format}`);
+    throw new UnsupportedKeyTypeError(`Unsupported export format: ${format}`);
   }
 
   /**
@@ -287,11 +292,14 @@ export class SshPrivateKey {
     const binding = AlgorithmRegistry.get(signatureAlgorithm);
 
     if (!binding) {
-      throw new Error(`Unsupported signature algorithm: ${signatureAlgorithm}`);
+      throw new UnsupportedAlgorithmError(signatureAlgorithm);
     }
 
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto, hash });
-    const encoded = binding.encodeSshSignature({ signature, algo: signatureAlgorithm as any });
+    const encoded = binding.encodeSshSignature({
+      signature,
+      algo: signatureAlgorithm as SshSignatureAlgo,
+    });
     return Convert.ToBase64(encoded);
   }
 
@@ -322,7 +330,7 @@ export class SshPrivateKey {
   async sign(data: ByteView, algo?: string, crypto = getCrypto()): Promise<string> {
     const binding = AlgorithmRegistry.get(this.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${this.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
     }
 
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
@@ -341,7 +349,7 @@ export class SshPrivateKey {
 
     const binding = AlgorithmRegistry.get(this.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${this.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
     }
 
     const exported = await binding.exportPublicToSsh({ publicKey: this.cryptoKey, crypto });

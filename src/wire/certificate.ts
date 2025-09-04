@@ -1,4 +1,6 @@
 import { Convert } from 'pvtsutils';
+import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from '../errors';
+import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import type { SshPublicKeyBlob } from './public_key';
 import { SshReader } from './reader';
@@ -31,7 +33,7 @@ export function parse(input: ByteView | string): SshCertificateBlob {
   if (typeof input === 'string') {
     const parts = input.trim().split(/\s+/);
     if (parts.length < 2) {
-      throw new Error('Invalid SSH certificate format');
+      throw new InvalidFormatError('SSH certificate string', 'type base64 [comment]');
     }
 
     const type = parts[0] as SshKeyType;
@@ -42,7 +44,7 @@ export function parse(input: ByteView | string): SshCertificateBlob {
     const reader = new SshReader(blob);
     const blobType = reader.readString();
     if (blobType !== type) {
-      throw new Error('Certificate type mismatch');
+      throw new InvalidFormatError(`certificate blob type ${blobType}`, `expected ${type}`);
     }
 
     return {
@@ -79,83 +81,22 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
   const nonce = reader.readBytes(reader.readUint32());
 
   // Read public key based on certificate type
-  let publicKey: SshPublicKeyBlob;
-  let keyType: string;
-
-  if (certType === 'ssh-rsa-cert-v01@openssh.com') {
-    // For RSA certificates, read the public key components directly
-    const publicKeyExponent = reader.readBytes(reader.readUint32()); // e
-    const publicKeyModulus = reader.readBytes(reader.readUint32()); // n
-
-    // Reconstruct the public key blob
-    const writer = new SshWriter();
-    writer.writeString('ssh-rsa');
-    writer.writeBytes(publicKeyExponent);
-    writer.writeBytes(publicKeyModulus);
-    publicKey = {
-      type: 'ssh-rsa',
-      keyData: writer.toUint8Array(),
-    };
-    keyType = 'ssh-rsa';
-  } else if (certType === 'ssh-ed25519-cert-v01@openssh.com') {
-    // For Ed25519 certificates, read the public key
-    const publicKeyData = reader.readBytes(reader.readUint32()); // 32-byte Ed25519 public key
-
-    // Reconstruct the public key blob
-    const writer = new SshWriter();
-    writer.writeString('ssh-ed25519');
-    writer.writeBytes(publicKeyData);
-    publicKey = {
-      type: 'ssh-ed25519',
-      keyData: writer.toUint8Array(),
-    };
-    keyType = 'ssh-ed25519';
-  } else if (certType === 'ecdsa-sha2-nistp256-cert-v01@openssh.com') {
-    // For ECDSA P-256 certificates, read the curve and public key point
-    const curveName = reader.readString(); // should be "nistp256"
-    const publicKeyPoint = reader.readBytes(reader.readUint32()); // ECDSA point
-
-    // Reconstruct the public key blob
-    const writer = new SshWriter();
-    writer.writeString('ecdsa-sha2-nistp256');
-    writer.writeString(curveName);
-    writer.writeBytes(publicKeyPoint);
-    publicKey = {
-      type: 'ecdsa-sha2-nistp256',
-      keyData: writer.toUint8Array(),
-    };
-    keyType = 'ecdsa-sha2-nistp256';
-  } else if (certType === 'ecdsa-sha2-nistp384-cert-v01@openssh.com') {
-    // For ECDSA P-384 certificates
-    const curveName = reader.readString(); // should be "nistp384"
-    const publicKeyPoint = reader.readBytes(reader.readUint32());
-
-    const writer = new SshWriter();
-    writer.writeString('ecdsa-sha2-nistp384');
-    writer.writeString(curveName);
-    writer.writeBytes(publicKeyPoint);
-    publicKey = {
-      type: 'ecdsa-sha2-nistp384',
-      keyData: writer.toUint8Array(),
-    };
-    keyType = 'ecdsa-sha2-nistp384';
-  } else if (certType === 'ecdsa-sha2-nistp521-cert-v01@openssh.com') {
-    // For ECDSA P-521 certificates
-    const curveName = reader.readString(); // should be "nistp521"
-    const publicKeyPoint = reader.readBytes(reader.readUint32());
-
-    const writer = new SshWriter();
-    writer.writeString('ecdsa-sha2-nistp521');
-    writer.writeString(curveName);
-    writer.writeBytes(publicKeyPoint);
-    publicKey = {
-      type: 'ecdsa-sha2-nistp521',
-      keyData: writer.toUint8Array(),
-    };
-    keyType = 'ecdsa-sha2-nistp521';
-  } else {
-    throw new Error(`Unsupported certificate type: ${certType}`);
+  // Map certificate type to SSH key type
+  const mappedKeyType = AlgorithmRegistry.certTypeToKeyType(certType);
+  if (!mappedKeyType) {
+    throw new UnsupportedAlgorithmError(certType);
   }
+
+  // Get the algorithm binding and parse the public key
+  const binding = AlgorithmRegistry.get(mappedKeyType);
+  if (!binding.parseCertificatePublicKey) {
+    throw new UnsupportedAlgorithmError(mappedKeyType, [
+      'algorithms with certificate parsing support',
+    ]);
+  }
+
+  const publicKey = binding.parseCertificatePublicKey(reader);
+  const keyType = mappedKeyType;
 
   // Read serial
   const serial = reader.readUint64();
@@ -337,7 +278,13 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
     writer.writeUint32(n.length);
     writer.writeBytes(n);
   } else {
-    throw new Error(`Unsupported key type for certificate creation: ${keyType}`);
+    throw new UnsupportedKeyTypeError(keyType, [
+      'ssh-ed25519',
+      'ssh-rsa',
+      'ecdsa-sha2-nistp256',
+      'ecdsa-sha2-nistp384',
+      'ecdsa-sha2-nistp521',
+    ]);
   }
 
   // Write serial
@@ -403,6 +350,12 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
 }
 
 function getCertificateType(keyType: string): string {
+  const binding = AlgorithmRegistry.get(keyType);
+  if (binding.getCertificateType) {
+    return binding.getCertificateType();
+  }
+
+  // Fallback for bindings that don't implement getCertificateType
   switch (keyType) {
     case 'ssh-ed25519':
       return 'ssh-ed25519-cert-v01@openssh.com';
@@ -415,6 +368,12 @@ function getCertificateType(keyType: string): string {
     case 'ecdsa-sha2-nistp521':
       return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
     default:
-      throw new Error(`Unsupported key type for certificate: ${keyType}`);
+      throw new UnsupportedKeyTypeError(keyType, [
+        'ssh-ed25519',
+        'ssh-rsa',
+        'ecdsa-sha2-nistp256',
+        'ecdsa-sha2-nistp384',
+        'ecdsa-sha2-nistp521',
+      ]);
   }
 }

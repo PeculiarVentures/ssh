@@ -1,5 +1,10 @@
 import { BufferSourceConverter, Convert } from 'pvtsutils';
 
+import {
+  EncryptedKeyNotSupportedError,
+  InvalidKeyDataError,
+  InvalidPrivateKeyFormatError,
+} from '../errors';
 import type {
   AlgorithmBinding,
   DecodeSshSignatureParams,
@@ -17,6 +22,7 @@ import type {
   VerifyParams,
 } from '../registry';
 import type { SshSignatureAlgo } from '../types';
+import type { SshPublicKeyBlob } from '../wire/public_key';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
@@ -41,7 +47,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     // Read curve name
     const curve = reader.readString();
     if (curve !== this.curveName) {
-      throw new Error(`Invalid curve name: ${curve}, expected ${this.curveName}`);
+      throw new InvalidKeyDataError(`ECDSA curve name ${curve}, expected ${this.curveName}`);
     }
 
     // Read Q (public key as mpint)
@@ -72,7 +78,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const jwk = await crypto.subtle.exportKey('jwk', publicKey);
 
     if (!jwk.x || !jwk.y) {
-      throw new Error('Invalid JWK');
+      throw new InvalidKeyDataError('ECDSA JWK missing x or y parameters');
     }
 
     // Decode base64url
@@ -137,7 +143,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     // Export private key to JWK to get all parameters
     const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
     if (!jwk.d || !jwk.x || !jwk.y) {
-      throw new Error('Invalid ECDSA JWK');
+      throw new InvalidKeyDataError('ECDSA private key JWK missing required parameters');
     }
 
     // Decode coordinates
@@ -176,7 +182,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     // Check magic string
     const magic = reader.readBytes(15);
     if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
-      throw new Error('Invalid OpenSSH private key format');
+      throw new InvalidPrivateKeyFormatError('invalid magic string');
     }
 
     // Read cipher, kdf, and options
@@ -185,13 +191,13 @@ export class EcdsaBinding implements AlgorithmBinding {
     const _kdfOptions = reader.readString();
 
     if (_cipherName !== 'none') {
-      throw new Error('Encrypted OpenSSH private keys are not supported');
+      throw new EncryptedKeyNotSupportedError(_cipherName);
     }
 
     // Read number of keys
     const numKeys = reader.readUint32();
     if (numKeys !== 1) {
-      throw new Error('Multiple keys in OpenSSH private key are not supported');
+      throw new InvalidPrivateKeyFormatError('multiple keys not supported');
     }
 
     // Skip public key
@@ -208,7 +214,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const checkint1 = privateReader.readUint32();
     const checkint2 = privateReader.readUint32();
     if (checkint1 !== checkint2) {
-      throw new Error('Invalid checkints in OpenSSH private key');
+      throw new InvalidPrivateKeyFormatError('invalid checkints');
     }
 
     // Skip key type
@@ -228,7 +234,7 @@ export class EcdsaBinding implements AlgorithmBinding {
 
     // Extract x and y from public key point (uncompressed format: 0x04 + x + y)
     if (publicKeyPoint[0] !== 0x04) {
-      throw new Error('Invalid public key point format');
+      throw new InvalidKeyDataError('invalid ECDSA public key point format');
     }
 
     // Calculate coordinate length based on curve
@@ -303,6 +309,32 @@ export class EcdsaBinding implements AlgorithmBinding {
       cryptoKey.algorithm.name === 'ECDSA' &&
       (cryptoKey.algorithm as any).namedCurve === this.namedCurve
     );
+  }
+
+  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob {
+    // Read ECDSA public key from certificate format
+    const curveName = reader.readString();
+    if (curveName !== this.curveName) {
+      throw new InvalidKeyDataError(
+        `ECDSA certificate curve name ${curveName}, expected ${this.curveName}`,
+      );
+    }
+    const publicKeyPoint = reader.readBytes(reader.readUint32()); // ECDSA point
+
+    // Reconstruct the public key blob in standard SSH format
+    const writer = new SshWriter();
+    writer.writeString(this.sshType);
+    writer.writeString(curveName);
+    writer.writeMpInt(publicKeyPoint);
+
+    return {
+      type: this.sshType as any,
+      keyData: writer.toUint8Array(),
+    };
+  }
+
+  getCertificateType(): string {
+    return `${this.sshType}-cert-v01@openssh.com`;
   }
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
+import { SshReader, SshWriter } from '../wire';
 
 describe('Ed25519 Algorithm', () => {
   const crypto = getCrypto();
@@ -184,5 +185,43 @@ describe('Ed25519 Algorithm', () => {
 
     // Compare SPKI
     expect(new Uint8Array(spki)).toEqual(new Uint8Array(exportedSpki));
+  });
+
+  it('should parse Ed25519 public key from certificate format', () => {
+    const ed25519Binding = AlgorithmRegistry.get('ssh-ed25519');
+    expect(ed25519Binding.parseCertificatePublicKey).toBeDefined();
+
+    // Create mock certificate data for Ed25519 (32 bytes public key)
+    const mockPubKey = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      mockPubKey[i] = i;
+    }
+
+    const writer = new SshWriter();
+    writer.writeUint32(mockPubKey.length); // length
+    writer.writeBytes(mockPubKey); // public key data
+
+    const reader = new SshReader(writer.toUint8Array());
+    const parseMethod = ed25519Binding.parseCertificatePublicKey;
+    expect(parseMethod).toBeDefined();
+    if (!parseMethod) {
+      throw new Error('parseCertificatePublicKey method not found');
+    }
+    const publicKey = parseMethod(reader);
+
+    expect(publicKey.type).toBe('ssh-ed25519');
+    expect(publicKey.keyData).toBeDefined();
+
+    // Verify the parsed key can be imported
+    const importReader = new SshReader(publicKey.keyData);
+    expect(importReader.readString()).toBe('ssh-ed25519');
+    expect(importReader.readUint32()).toBe(32);
+    const parsedPubKey = importReader.readBytes(32);
+    expect(new Uint8Array(parsedPubKey)).toEqual(mockPubKey);
+  });
+
+  it('should return correct certificate type', () => {
+    const ed25519Binding = AlgorithmRegistry.get('ssh-ed25519');
+    expect(ed25519Binding.getCertificateType?.()).toBe('ssh-ed25519-cert-v01@openssh.com');
   });
 });

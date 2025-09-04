@@ -1,4 +1,5 @@
 import { getCrypto } from '../crypto';
+import { UnsupportedKeyTypeError } from '../errors';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import {
@@ -102,7 +103,7 @@ export class SshCertificate {
     // Decode SSH signature to raw format
     const binding = AlgorithmRegistry.get(verifyKey.type);
     if (!binding) {
-      throw new Error(`Unsupported key type: ${verifyKey.type}`);
+      throw new UnsupportedKeyTypeError(`Unsupported key type: ${verifyKey.type}`);
     }
 
     const decodedSignature = binding.decodeSshSignature({ signature: this.data.signature });

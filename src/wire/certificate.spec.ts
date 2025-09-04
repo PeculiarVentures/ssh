@@ -1,10 +1,17 @@
 import { Convert } from 'pvtsutils';
 import { describe, expect, it } from 'vitest';
 import { testUserEcdsa, testUserEd25519, testUserRsa } from '../../tests/utils/testFixtures';
-import { parse as parseCertificate, serialize as serializeCertificate } from './certificate';
+import { getCrypto } from '../crypto';
+import { AlgorithmRegistry } from '../registry';
+import {
+  parse as parseCertificate,
+  parseCertificateData,
+  serialize as serializeCertificate,
+} from './certificate';
 import { SshWriter } from './writer';
 
 describe('parseCertificate', () => {
+  const crypto = getCrypto();
   it('should parse certificate from Uint8Array', () => {
     const writer = new SshWriter();
     writer.writeString('ssh-rsa-cert-v01@openssh.com');
@@ -51,6 +58,62 @@ describe('parseCertificate', () => {
     expect(result.type).toBe('ecdsa-sha2-nistp256-cert-v01@openssh.com');
     expect(result.keyData).toBeDefined();
     expect(result.keyData.length).toBeGreaterThan(0);
+  });
+
+  it('should parse certificate data and allow public key import', async () => {
+    // Test RSA certificate
+    const rsaCert = parseCertificate(testUserRsa);
+    const rsaData = parseCertificateData(rsaCert.keyData);
+    const rsaBinding = AlgorithmRegistry.get(rsaData.publicKey.type);
+    const rsaKey = await rsaBinding.importPublicFromSsh({
+      blob: rsaData.publicKey.keyData,
+      crypto,
+    });
+    expect(rsaKey).toBeDefined();
+
+    // Test Ed25519 certificate
+    const ed25519Cert = parseCertificate(testUserEd25519);
+    const ed25519Data = parseCertificateData(ed25519Cert.keyData);
+    const ed25519Binding = AlgorithmRegistry.get(ed25519Data.publicKey.type);
+    const ed25519Key = await ed25519Binding.importPublicFromSsh({
+      blob: ed25519Data.publicKey.keyData,
+      crypto,
+    });
+    expect(ed25519Key).toBeDefined();
+
+    // Test ECDSA certificate
+    const ecdsaCert = parseCertificate(testUserEcdsa);
+    const ecdsaData = parseCertificateData(ecdsaCert.keyData);
+    const ecdsaBinding = AlgorithmRegistry.get(ecdsaData.publicKey.type);
+    const ecdsaKey = await ecdsaBinding.importPublicFromSsh({
+      blob: ecdsaData.publicKey.keyData,
+      crypto,
+    });
+    expect(ecdsaKey).toBeDefined();
+  });
+
+  it('should use AlgorithmRegistry for certificate type mapping', () => {
+    // Test that certTypeToKeyType works correctly
+    expect(AlgorithmRegistry.certTypeToKeyType('ssh-rsa-cert-v01@openssh.com')).toBe('ssh-rsa');
+    expect(AlgorithmRegistry.certTypeToKeyType('ssh-ed25519-cert-v01@openssh.com')).toBe(
+      'ssh-ed25519',
+    );
+    expect(AlgorithmRegistry.certTypeToKeyType('ecdsa-sha2-nistp256-cert-v01@openssh.com')).toBe(
+      'ecdsa-sha2-nistp256',
+    );
+    expect(AlgorithmRegistry.certTypeToKeyType('unknown-cert-type')).toBeUndefined();
+  });
+
+  it('should use AlgorithmRegistry for certificate type generation', () => {
+    // Test that bindings return correct certificate types
+    const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
+    expect(rsaBinding.getCertificateType?.()).toBe('ssh-rsa-cert-v01@openssh.com');
+
+    const ed25519Binding = AlgorithmRegistry.get('ssh-ed25519');
+    expect(ed25519Binding.getCertificateType?.()).toBe('ssh-ed25519-cert-v01@openssh.com');
+
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
+    expect(ecdsaBinding.getCertificateType?.()).toBe('ecdsa-sha2-nistp256-cert-v01@openssh.com');
   });
 });
 

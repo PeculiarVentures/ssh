@@ -22,6 +22,6 @@ describe('AlgorithmRegistry', () => {
   });
 
   it('should throw error for unregistered algorithm', () => {
-    expect(() => AlgorithmRegistry.get('unknown')).toThrow(`Algorithm 'unknown' is not supported`);
+    expect(() => AlgorithmRegistry.get('unknown')).toThrow('Unsupported algorithm: unknown.');
   });
 });

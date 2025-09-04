@@ -1,3 +1,4 @@
+import { InvalidFormatError } from '../errors';
 import type { ByteView } from '../types';
 
 export class SshWriter {
@@ -43,7 +44,7 @@ export class SshWriter {
   writeBytes(data: ByteView): void {
     const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
     this.ensureCapacity(bytes.length);
-    this.buffer.set(bytes, this.offset,);
+    this.buffer.set(bytes, this.offset);
     this.offset += bytes.length;
   }
 
@@ -69,7 +70,7 @@ export class SshWriter {
 
   seek(offset: number): void {
     if (offset < 0 || offset > this.buffer.length) {
-      throw new Error('Invalid offset');
+      throw new InvalidFormatError('Invalid offset');
     }
     this.offset = offset;
   }

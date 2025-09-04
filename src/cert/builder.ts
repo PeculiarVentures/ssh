@@ -1,4 +1,5 @@
 import { getCrypto, type CryptoLike } from '../crypto';
+import { UnsupportedKeyTypeError } from '../errors';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import type { SshKeyType, SshSignatureAlgo } from '../types';
@@ -18,7 +19,13 @@ function getSignatureAlgo(keyType: SshKeyType): SshSignatureAlgo {
     case 'ecdsa-sha2-nistp521':
       return 'ecdsa-sha2-nistp521';
     default:
-      throw new Error(`Unsupported key type for signature: ${keyType}`);
+      throw new UnsupportedKeyTypeError(keyType, [
+        'ssh-ed25519',
+        'ssh-rsa',
+        'ecdsa-sha2-nistp256',
+        'ecdsa-sha2-nistp384',
+        'ecdsa-sha2-nistp521',
+      ]);
   }
 }
 
@@ -187,7 +194,13 @@ export class SshCertificateBuilder {
     // Get signature key binding for encoding signature
     const signatureKeyBinding = AlgorithmRegistry.get(signatureKey.type);
     if (!signatureKeyBinding) {
-      throw new Error(`Unsupported signature key type: ${signatureKey.type}`);
+      throw new UnsupportedKeyTypeError(signatureKey.type, [
+        'ssh-ed25519',
+        'ssh-rsa',
+        'ecdsa-sha2-nistp256',
+        'ecdsa-sha2-nistp384',
+        'ecdsa-sha2-nistp521',
+      ]);
     }
 
     // Get signature key blob directly
@@ -251,26 +264,8 @@ export class SshCertificateBuilder {
     });
 
     // Create certificate blob
-    let certType: string;
-    switch (this.publicKey.type) {
-      case 'ssh-ed25519':
-        certType = 'ssh-ed25519-cert-v01@openssh.com';
-        break;
-      case 'ssh-rsa':
-        certType = 'ssh-rsa-cert-v01@openssh.com';
-        break;
-      case 'ecdsa-sha2-nistp256':
-        certType = 'ecdsa-sha2-nistp256-cert-v01@openssh.com';
-        break;
-      case 'ecdsa-sha2-nistp384':
-        certType = 'ecdsa-sha2-nistp384-cert-v01@openssh.com';
-        break;
-      case 'ecdsa-sha2-nistp521':
-        certType = 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
-        break;
-      default:
-        throw new Error(`Unsupported key type for certificate: ${this.publicKey.type}`);
-    }
+    const binding = AlgorithmRegistry.get(this.publicKey.type);
+    const certType = binding.getCertificateType?.() || this.getCertificateType();
 
     const certBlob = {
       type: certType as SshKeyType,
@@ -296,7 +291,13 @@ export class SshCertificateBuilder {
       case 'ecdsa-sha2-nistp521':
         return 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
       default:
-        throw new Error(`Unsupported key type for certificate: ${this.publicKey.type}`);
+        throw new UnsupportedKeyTypeError(this.publicKey.type, [
+          'ssh-ed25519',
+          'ssh-rsa',
+          'ecdsa-sha2-nistp256',
+          'ecdsa-sha2-nistp384',
+          'ecdsa-sha2-nistp521',
+        ]);
     }
   }
 }

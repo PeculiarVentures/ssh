@@ -1,5 +1,10 @@
 import { BufferSourceConverter, Convert } from 'pvtsutils';
 
+import {
+  EncryptedKeyNotSupportedError,
+  InvalidKeyDataError,
+  InvalidPrivateKeyFormatError,
+} from '../errors';
 import type {
   AlgorithmBinding,
   DecodeSshSignatureParams,
@@ -17,6 +22,7 @@ import type {
   VerifyParams,
 } from '../registry';
 import type { SshSignatureAlgo } from '../types';
+import type { SshPublicKeyBlob } from '../wire/public_key';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
@@ -64,7 +70,7 @@ export class RsaBinding implements AlgorithmBinding {
     const jwk = await crypto.subtle.exportKey('jwk', publicKey);
 
     if (!jwk.n || !jwk.e) {
-      throw new Error('Invalid JWK');
+      throw new InvalidKeyDataError('RSA JWK missing required parameters (n, e)');
     }
 
     // Decode base64url
@@ -132,7 +138,7 @@ export class RsaBinding implements AlgorithmBinding {
     // Check magic string
     const magic = reader.readBytes(15);
     if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
-      throw new Error('Invalid OpenSSH private key format');
+      throw new InvalidPrivateKeyFormatError('invalid magic string');
     }
 
     // Read cipher, kdf, and options
@@ -141,13 +147,13 @@ export class RsaBinding implements AlgorithmBinding {
     const _kdfOptions = reader.readString();
 
     if (_cipherName !== 'none') {
-      throw new Error('Encrypted OpenSSH private keys are not supported');
+      throw new EncryptedKeyNotSupportedError(_cipherName);
     }
 
     // Read number of keys
     const numKeys = reader.readUint32();
     if (numKeys !== 1) {
-      throw new Error('Multiple keys in OpenSSH private key are not supported');
+      throw new InvalidPrivateKeyFormatError('multiple keys not supported');
     }
 
     // Skip public key (we don't need it for private key import)
@@ -165,7 +171,7 @@ export class RsaBinding implements AlgorithmBinding {
     const checkint1 = privateReader.readUint32();
     const checkint2 = privateReader.readUint32();
     if (checkint1 !== checkint2) {
-      throw new Error('Invalid checkints in OpenSSH private key');
+      throw new InvalidPrivateKeyFormatError('invalid checkints');
     }
 
     // Skip key type (already known)
@@ -226,7 +232,7 @@ export class RsaBinding implements AlgorithmBinding {
     // Export private key to JWK to obtain all RSA parameters
     const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
     if (!jwk.n || !jwk.e || !jwk.d || !jwk.p || !jwk.q) {
-      throw new Error('Invalid RSA JWK');
+      throw new InvalidKeyDataError('RSA JWK missing required parameters');
     }
 
     const n = new Uint8Array(Convert.FromBase64Url(jwk.n));
@@ -303,5 +309,26 @@ export class RsaBinding implements AlgorithmBinding {
 
   supportsCryptoKey(cryptoKey: CryptoKey): boolean {
     return cryptoKey.algorithm.name === 'RSASSA-PKCS1-v1_5';
+  }
+
+  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob {
+    // Read RSA public key components from certificate format
+    const publicKeyExponent = reader.readBytes(reader.readUint32()); // e
+    const publicKeyModulus = reader.readBytes(reader.readUint32()); // n
+
+    // Reconstruct the public key blob in standard SSH format
+    const writer = new SshWriter();
+    writer.writeString('ssh-rsa');
+    writer.writeMpInt(publicKeyExponent);
+    writer.writeMpInt(publicKeyModulus);
+
+    return {
+      type: 'ssh-rsa',
+      keyData: writer.toUint8Array(),
+    };
+  }
+
+  getCertificateType(): string {
+    return 'ssh-rsa-cert-v01@openssh.com';
   }
 }
