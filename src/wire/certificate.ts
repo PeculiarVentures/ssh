@@ -1,5 +1,5 @@
 import { Convert } from 'pvtsutils';
-import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from '../errors';
+import { InvalidFormatError, UnsupportedAlgorithmError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
 import { decoder, encoder } from '../utils';
@@ -254,42 +254,8 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   writer.writeBytes(certNonce);
 
   // Write public key data based on key type
-  if (keyType === 'ssh-ed25519') {
-    // For Ed25519, extract the raw key data (skip type string and length)
-    const publicKeyReader = new SshReader(publicKey.keyData);
-    publicKeyReader.readString(); // Skip "ssh-ed25519"
-    const keyLength = publicKeyReader.readUint32(); // Read length of key data
-    const rawKeyData = publicKeyReader.readBytes(keyLength); // Read actual key data
-    writer.writeUint32(rawKeyData.length);
-    writer.writeBytes(rawKeyData);
-  } else if (keyType === 'ssh-rsa') {
-    // For RSA, extract e and n components
-    const publicKeyReader = new SshReader(publicKey.keyData);
-    publicKeyReader.readString(); // Skip "ssh-rsa"
-    const e = publicKeyReader.readMpInt();
-    const n = publicKeyReader.readMpInt();
-    writer.writeUint32(e.length);
-    writer.writeBytes(e);
-    writer.writeUint32(n.length);
-    writer.writeBytes(n);
-  } else if (keyType.startsWith('ecdsa-sha2-')) {
-    // For ECDSA, extract curve name and public point
-    const publicKeyReader = new SshReader(publicKey.keyData);
-    publicKeyReader.readString(); // Skip "ecdsa-sha2-nistp256" etc.
-    const curveName = publicKeyReader.readString();
-    const publicPoint = publicKeyReader.readMpInt();
-    writer.writeString(curveName);
-    writer.writeUint32(publicPoint.length);
-    writer.writeBytes(publicPoint);
-  } else {
-    throw new UnsupportedKeyTypeError(keyType, [
-      'ssh-ed25519',
-      'ssh-rsa',
-      'ecdsa-sha2-nistp256',
-      'ecdsa-sha2-nistp384',
-      'ecdsa-sha2-nistp521',
-    ]);
-  }
+  const binding = AlgorithmRegistry.get(keyType);
+  binding.writeCertificatePublicKey(writer, publicKey);
 
   // Write serial
   writer.writeUint64(serial);

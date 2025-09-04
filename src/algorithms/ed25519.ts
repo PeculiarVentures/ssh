@@ -259,6 +259,16 @@ export class Ed25519Binding implements AlgorithmBinding {
     };
   }
 
+  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+    // For Ed25519, extract the raw key data (skip type string and length)
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ssh-ed25519"
+    const keyLength = publicKeyReader.readUint32(); // Read length of key data
+    const rawKeyData = publicKeyReader.readBytes(keyLength); // Read actual key data
+    writer.writeUint32(rawKeyData.length);
+    writer.writeBytes(rawKeyData);
+  }
+
   getCertificateType(): string {
     return 'ssh-ed25519-cert-v01@openssh.com';
   }

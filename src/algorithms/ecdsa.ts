@@ -335,6 +335,17 @@ export class EcdsaBinding implements AlgorithmBinding {
     };
   }
 
+  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+    // For ECDSA, extract curve name and public point
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ecdsa-sha2-nistp256" etc.
+    const curveName = publicKeyReader.readString();
+    const publicPoint = publicKeyReader.readMpInt();
+    writer.writeString(curveName);
+    writer.writeUint32(publicPoint.length);
+    writer.writeBytes(publicPoint);
+  }
+
   getCertificateType(): string {
     return `${this.sshType}-cert-v01@openssh.com`;
   }

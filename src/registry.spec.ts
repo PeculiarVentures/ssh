@@ -17,6 +17,7 @@ describe('AlgorithmRegistry', () => {
       decodeSshSignature: vi.fn(),
       supportsCryptoKey: vi.fn(),
       parseCertificatePublicKey: vi.fn(),
+      writeCertificatePublicKey: vi.fn(),
       getCertificateType: vi.fn(),
       getSignatureAlgo: vi.fn(),
     };

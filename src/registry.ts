@@ -3,6 +3,7 @@ import { UnsupportedAlgorithmError } from './errors.js';
 import type { ByteView, SshSignatureAlgo } from './types';
 import type { SshPublicKeyBlob } from './wire/public_key';
 import { SshReader } from './wire/reader';
+import { SshWriter } from './wire/writer';
 
 export interface ImportPublicFromSshParams {
   blob: Uint8Array;
@@ -103,6 +104,13 @@ export interface AlgorithmBinding {
    * @returns SshPublicKeyBlob in standard SSH format
    */
   parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob;
+
+  /**
+   * Write public key to certificate format
+   * @param writer - SshWriter to write to
+   * @param publicKey - SshPublicKeyBlob to serialize
+   */
+  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void;
 
   /**
    * Get certificate type for this algorithm

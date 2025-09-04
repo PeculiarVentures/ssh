@@ -332,6 +332,18 @@ export class RsaBinding implements AlgorithmBinding {
     };
   }
 
+  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+    // For RSA, extract e and n components
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ssh-rsa"
+    const e = publicKeyReader.readMpInt();
+    const n = publicKeyReader.readMpInt();
+    writer.writeUint32(e.length);
+    writer.writeBytes(e);
+    writer.writeUint32(n.length);
+    writer.writeBytes(n);
+  }
+
   getCertificateType(): string {
     return 'ssh-rsa-cert-v01@openssh.com';
   }
