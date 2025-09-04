@@ -1,5 +1,5 @@
 import { Convert } from 'pvtsutils';
-import { InvalidFormatError, UnsupportedKeyTypeError } from '../errors';
+import { InvalidFormatError } from '../errors';
 import type { SshKeyType } from '../types';
 import { SshReader } from './reader';
 
@@ -23,7 +23,7 @@ export function parsePublicKey(input: string | Uint8Array): SshPublicKeyBlob {
   const reader = new SshReader(blob);
   const blobType = reader.readString();
   if (blobType !== type) {
-    throw new UnsupportedKeyTypeError('Key type mismatch');
+    throw new InvalidFormatError('Key type mismatch');
   }
 
   return {
