@@ -151,8 +151,9 @@ export class SshPrivateKey {
         throw new UnsupportedKeyTypeError(`SSH export not supported for ${this.type}`);
       }
 
-      // Export public key blob for the outer structure
-      const publicBlob = await binding.exportPublicToSsh({ publicKey: this.cryptoKey, crypto });
+      // Export public key blob for the outer structure using cached public key
+      const publicKey = await this.exportPublicKey(crypto);
+      const publicBlob = publicKey.getBlob().keyData;
 
       // Export algorithm-specific private data
       const privateData = await binding.exportPrivateToSsh({ privateKey: this.cryptoKey, crypto });
