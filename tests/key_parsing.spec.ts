@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePublicKey, serializePublicKey, SshReader } from '../src';
+import { parsePublicKey, serializePublicKey, SshReader } from '../src/wire';
 import {
   ecdsaP256Key,
   ecdsaP384Key,
