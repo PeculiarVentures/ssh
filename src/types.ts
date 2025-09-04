@@ -62,3 +62,11 @@ export type ExportFormat = 'ssh' | 'spki' | 'pkcs8';
  * Hash algorithms supported for RSA signatures
  */
 export type HashAlgorithm = 'SHA-256' | 'SHA-512';
+
+/**
+ * Abstract base class for all SSH objects
+ */
+export abstract class SSHObject {
+  abstract readonly type: string;
+  abstract toSSH(): Promise<string>;
+}

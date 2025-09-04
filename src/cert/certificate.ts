@@ -2,6 +2,7 @@ import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import { SshSignature } from '../signature';
+import { SSHObject } from '../types';
 import {
   parseCertificateData,
   parse as parseWireCertificate,
@@ -13,7 +14,10 @@ import { SshReader } from '../wire/reader';
 
 export type SshCertificateType = 'user' | 'host';
 
-export class SshCertificate {
+export class SshCertificate extends SSHObject {
+  public static readonly TYPE = 'certificate';
+  public readonly type = SshCertificate.TYPE;
+
   private _blob: SshCertificateBlob;
   private data: SshCertificateData;
   private _validAfter: bigint;
@@ -31,6 +35,7 @@ export class SshCertificate {
   readonly extensions: Record<string, string>;
 
   private constructor(blob: SshCertificateBlob) {
+    super();
     this._blob = blob;
     this.data = parseCertificateData(blob.keyData);
     this._validAfter = this.data.validAfter;
@@ -73,7 +78,7 @@ export class SshCertificate {
    * Export to SSH format (convenience method).
    * Returns a base64-encoded string in SSH certificate format.
    */
-  toSSH(): string {
+  async toSSH(): Promise<string> {
     return this.toText();
   }
 

@@ -15,7 +15,7 @@ describe('SSH Unified API', () => {
     it('should import SSH public key automatically', async () => {
       const key = await SSH.import(rsaKey);
       expect(key).toBeInstanceOf(SshPublicKey);
-      expect((key as SshPublicKey).type).toBe('ssh-rsa');
+      expect((key as SshPublicKey).keyType).toBe('ssh-rsa');
     });
 
     it('should import SSH private key automatically', async () => {
@@ -27,7 +27,7 @@ describe('SSH Unified API', () => {
     it('should import with explicit format', async () => {
       const key = await SSH.import(ed25519Key, { format: 'ssh' });
       expect(key).toBeInstanceOf(SshPublicKey);
-      expect((key as SshPublicKey).type).toBe('ssh-ed25519');
+      expect((key as SshPublicKey).keyType).toBe('ssh-ed25519');
     });
 
     it('should throw on unsupported format', async () => {
@@ -42,7 +42,7 @@ describe('SSH Unified API', () => {
       expect(privateKey).toBeInstanceOf(SshPrivateKey);
       expect(publicKey).toBeInstanceOf(SshPublicKey);
       expect(privateKey.keyType).toBe('ssh-ed25519');
-      expect(publicKey.type).toBe('ssh-ed25519');
+      expect(publicKey.keyType).toBe('ssh-ed25519');
 
       // Test signing/verification
       const testData = new Uint8Array([1, 2, 3, 4, 5]);
@@ -55,14 +55,14 @@ describe('SSH Unified API', () => {
       const { privateKey, publicKey } = await SSH.createKeyPair({ name: 'ed25519' });
 
       expect(privateKey.keyType).toBe('ssh-ed25519');
-      expect(publicKey.type).toBe('ssh-ed25519');
+      expect(publicKey.keyType).toBe('ssh-ed25519');
     });
 
     it('should create RSA key pair', async () => {
       const { privateKey, publicKey } = await SSH.createKeyPair('rsa');
 
       expect(privateKey.keyType).toBe('ssh-rsa');
-      expect(publicKey.type).toBe('ssh-rsa');
+      expect(publicKey.keyType).toBe('ssh-rsa');
     });
 
     it('should create RSA key pair with custom size', async () => {
@@ -72,21 +72,21 @@ describe('SSH Unified API', () => {
       });
 
       expect(privateKey.keyType).toBe('ssh-rsa');
-      expect(publicKey.type).toBe('ssh-rsa');
+      expect(publicKey.keyType).toBe('ssh-rsa');
     });
 
     it('should create ECDSA P-256 key pair', async () => {
       const { privateKey, publicKey } = await SSH.createKeyPair('ecdsa-p256');
 
       expect(privateKey.keyType).toBe('ecdsa-sha2-nistp256');
-      expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
+      expect(publicKey.keyType).toBe('ecdsa-sha2-nistp256');
     });
 
     it('should create ECDSA P-256 key pair with object algorithm', async () => {
       const { privateKey, publicKey } = await SSH.createKeyPair({ name: 'ecdsa-p256' });
 
       expect(privateKey.keyType).toBe('ecdsa-sha2-nistp256');
-      expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
+      expect(publicKey.keyType).toBe('ecdsa-sha2-nistp256');
     });
 
     it('should throw on unsupported algorithm', async () => {
@@ -127,7 +127,7 @@ describe('Enhanced SshPrivateKey API', () => {
     // Test getting public key
     const publicKey = await key.getPublicKey();
     expect(publicKey).toBeInstanceOf(SshPublicKey);
-    expect(publicKey.type).toBe('ssh-ed25519');
+    expect(publicKey.keyType).toBe('ssh-ed25519');
   });
 });
 

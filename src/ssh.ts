@@ -5,7 +5,7 @@ import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError 
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SshSignature } from './signature';
-import type { ByteView, SshKeyType } from './types';
+import type { ByteView, SshKeyType, SSHObject } from './types';
 
 export interface ImportOptions {
   format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
@@ -37,6 +37,11 @@ export interface EcdsaAlgorithm extends SshAlgorithm {
 export type SshAlgorithmIdentifier = string | RsaAlgorithm | Ed25519Algorithm | EcdsaAlgorithm;
 
 /**
+ * Union type for all SSH objects that can be imported
+ */
+export type SshType = SSHObject | SshPrivateKey | SshPublicKey | SshCertificate | SshSignature;
+
+/**
  * Unified SSH API - provides convenient methods for working with SSH keys and certificates
  */
 export class SSH {
@@ -47,7 +52,7 @@ export class SSH {
     data: string | ByteView,
     options: ImportOptions = {},
     crypto = getCrypto(),
-  ): Promise<SshPrivateKey | SshPublicKey | SshCertificate | SshSignature> {
+  ): Promise<SshType> {
     const { format, type } = options;
 
     // If format is not specified, try to auto-detect

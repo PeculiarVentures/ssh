@@ -110,7 +110,7 @@ describe('SshPrivateKey', () => {
 
     // Test getting public key
     const publicKey = await key.getPublicKey();
-    expect(publicKey.type).toBe('ssh-ed25519');
+    expect(publicKey.keyType).toBe('ssh-ed25519');
 
     // Test signing with convenience method
     const testData = new Uint8Array([1, 2, 3, 4, 5]);
@@ -135,7 +135,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const reimportedPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(reimportedPub.type);
+    expect(originalPub.keyType).toBe(reimportedPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(reimportedPub.getBlob().keyData);
   });
 
@@ -155,7 +155,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const reimportedPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(reimportedPub.type);
+    expect(originalPub.keyType).toBe(reimportedPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(reimportedPub.getBlob().keyData);
   });
 
@@ -171,7 +171,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const finalPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(finalPub.type);
+    expect(originalPub.keyType).toBe(finalPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(finalPub.getBlob().keyData);
   });
 
@@ -187,7 +187,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const finalPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(finalPub.type);
+    expect(originalPub.keyType).toBe(finalPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(finalPub.getBlob().keyData);
   });
 
@@ -228,7 +228,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const reimportedPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(reimportedPub.type);
+    expect(originalPub.keyType).toBe(reimportedPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(reimportedPub.getBlob().keyData);
   });
 
@@ -248,7 +248,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const reimportedPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(reimportedPub.type);
+    expect(originalPub.keyType).toBe(reimportedPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(reimportedPub.getBlob().keyData);
   });
 
@@ -268,7 +268,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const reimportedPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(reimportedPub.type);
+    expect(originalPub.keyType).toBe(reimportedPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(reimportedPub.getBlob().keyData);
   });
 
@@ -287,7 +287,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const finalPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(finalPub.type);
+    expect(originalPub.keyType).toBe(finalPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(finalPub.getBlob().keyData);
   });
 
@@ -306,7 +306,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const finalPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(finalPub.type);
+    expect(originalPub.keyType).toBe(finalPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(finalPub.getBlob().keyData);
   });
 
@@ -325,7 +325,7 @@ describe('SshPrivateKey', () => {
     const originalPub = await key.getPublicKey();
     const finalPub = await reimported.getPublicKey();
 
-    expect(originalPub.type).toBe(finalPub.type);
+    expect(originalPub.keyType).toBe(finalPub.keyType);
     expect(originalPub.getBlob().keyData).toEqual(finalPub.getBlob().keyData);
   });
 });

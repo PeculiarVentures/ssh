@@ -7,6 +7,7 @@ import {
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
+import { SSHObject } from '../types';
 import { encoder } from '../utils';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
@@ -14,15 +15,19 @@ import { SshPublicKey } from './public_key';
 
 export type SshPrivateKeyExportFormat = 'ssh' | 'pkcs8';
 
-export class SshPrivateKey {
+export class SshPrivateKey extends SSHObject {
+  public static readonly TYPE = 'private-key';
+  public readonly type = SshPrivateKey.TYPE;
+
   private cryptoKey: CryptoKey;
-  private type: SshKeyType;
   private publicKey?: SshPublicKey;
   private cachedJwk?: JsonWebKey;
+  public readonly keyType: SshKeyType;
 
-  private constructor(cryptoKey: CryptoKey, type: SshKeyType, publicKey?: SshPublicKey) {
+  private constructor(cryptoKey: CryptoKey, keyType: SshKeyType, publicKey?: SshPublicKey) {
+    super();
     this.cryptoKey = cryptoKey;
-    this.type = type;
+    this.keyType = keyType;
     this.publicKey = publicKey;
   }
 
@@ -146,10 +151,10 @@ export class SshPrivateKey {
     crypto = getCrypto(),
   ): Promise<string | Uint8Array> {
     if (format === 'ssh') {
-      const binding = AlgorithmRegistry.get(this.type);
+      const binding = AlgorithmRegistry.get(this.keyType);
 
       if (!binding.exportPrivateToSsh) {
-        throw new UnsupportedKeyTypeError(`SSH export not supported for ${this.type}`);
+        throw new UnsupportedKeyTypeError(`SSH export not supported for ${this.keyType}`);
       }
 
       // Export public key blob for the outer structure using cached public key
@@ -224,7 +229,7 @@ export class SshPrivateKey {
 
       return `-----BEGIN OPENSSH PRIVATE KEY-----\n${lines.join('\n')}\n-----END OPENSSH PRIVATE KEY-----`;
     } else if (format === 'pkcs8') {
-      const binding = AlgorithmRegistry.get(this.type);
+      const binding = AlgorithmRegistry.get(this.keyType);
       const pkcs8 = await binding.exportPrivatePkcs8({ privateKey: this.cryptoKey, crypto });
       return new Uint8Array(pkcs8);
     }
@@ -289,22 +294,15 @@ export class SshPrivateKey {
       return this.publicKey;
     }
 
-    const binding = AlgorithmRegistry.get(this.type);
+    const binding = AlgorithmRegistry.get(this.keyType);
 
     const exported = await binding.exportPublicToSsh({ publicKey: this.cryptoKey, crypto });
     const blob = {
-      type: this.type,
+      type: this.keyType,
       keyData: exported,
     };
 
     this.publicKey = new SshPublicKey(blob);
     return this.publicKey;
-  }
-
-  /**
-   * Get key type
-   */
-  get keyType(): SshKeyType {
-    return this.type;
   }
 }

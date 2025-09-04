@@ -139,7 +139,7 @@ describe('SshCertificateBuilder', () => {
     expect(certificate.principals).toEqual(['user@example.com']);
     expect(certificate.serial).toBe(456n);
     expect(certificate.certType).toBe('user');
-    expect(certificate.publicKey.type).toBe('ecdsa-sha2-nistp256');
+    expect(certificate.publicKey.keyType).toBe('ecdsa-sha2-nistp256');
 
     // Verify signature
     const isValid = await certificate.verify(caPublicKey);
@@ -149,7 +149,7 @@ describe('SshCertificateBuilder', () => {
     const certText = certificate.toText();
     const certFromText = await SshCertificate.fromText(certText);
     expect(certFromText.keyId).toBe('test-ecdsa-cert');
-    expect(certFromText.publicKey.type).toBe('ecdsa-sha2-nistp256');
+    expect(certFromText.publicKey.keyType).toBe('ecdsa-sha2-nistp256');
     const isValidRoundTrip = await certFromText.verify(caPublicKey);
     expect(isValidRoundTrip).toBe(true);
   });
@@ -184,7 +184,7 @@ describe('SshCertificateBuilder', () => {
       privateKey: caKeyPair.privateKey,
     });
 
-    expect(certificate.publicKey.type).toBe('ecdsa-sha2-nistp384');
+    expect(certificate.publicKey.keyType).toBe('ecdsa-sha2-nistp384');
 
     // Verify signature
     const isValid = await certificate.verify(caPublicKey);
@@ -245,7 +245,7 @@ describe('SshCertificateBuilder', () => {
     expect(certificate.principals).toEqual(['user@example.com']);
     expect(certificate.serial).toBe(789n);
     expect(certificate.certType).toBe('user');
-    expect(certificate.publicKey.type).toBe('ssh-rsa');
+    expect(certificate.publicKey.keyType).toBe('ssh-rsa');
 
     // Verify signature
     const isValid = await certificate.verify(caPublicKey);
@@ -255,7 +255,7 @@ describe('SshCertificateBuilder', () => {
     const certText = certificate.toText();
     const certFromText = await SshCertificate.fromText(certText);
     expect(certFromText.keyId).toBe('test-rsa-sha512-cert');
-    expect(certFromText.publicKey.type).toBe('ssh-rsa');
+    expect(certFromText.publicKey.keyType).toBe('ssh-rsa');
     const isValidRoundTrip = await certFromText.verify(caPublicKey);
     expect(isValidRoundTrip).toBe(true);
   });

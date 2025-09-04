@@ -94,7 +94,7 @@ describe('Key Compatibility', () => {
 
         // Import into module
         const publicKey = await SSH.import(pubContent, { format: 'ssh' });
-        expect((publicKey as any).type).toBe(algo.expectedPrefix);
+        expect((publicKey as any).keyType).toBe(algo.expectedPrefix);
 
         // Verify we can export it back to SSH format
         const exportedSsh = await (publicKey as any).toSSH();

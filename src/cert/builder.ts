@@ -155,7 +155,7 @@ export class SshCertificateBuilder {
 
     return createCertificateData({
       publicKey: publicKeyBlob,
-      keyType: this.publicKey.type,
+      keyType: this.publicKey.keyType,
       serial: this.serial,
       type: this.type,
       keyId: this.keyId,
@@ -179,7 +179,7 @@ export class SshCertificateBuilder {
     if (signatureAlgorithm) {
       signatureKeyBinding = AlgorithmRegistry.get(signatureAlgorithm);
     } else {
-      signatureKeyBinding = AlgorithmRegistry.get(signatureKey.type);
+      signatureKeyBinding = AlgorithmRegistry.get(signatureKey.keyType);
     }
 
     // Get signature key blob directly
@@ -200,7 +200,7 @@ export class SshCertificateBuilder {
     const publicKeyBlob = this.publicKey.getBlob();
     const certDataWithSignatureKey = createCertificateData({
       publicKey: publicKeyBlob,
-      keyType: this.publicKey.type,
+      keyType: this.publicKey.keyType,
       serial: this.serial,
       type: this.type,
       keyId: this.keyId,
@@ -228,7 +228,7 @@ export class SshCertificateBuilder {
     // Create final certificate data with signature
     const finalCertData = createCertificateData({
       publicKey: publicKeyBlob,
-      keyType: this.publicKey.type,
+      keyType: this.publicKey.keyType,
       serial: this.serial,
       type: this.type,
       keyId: this.keyId,
@@ -243,7 +243,7 @@ export class SshCertificateBuilder {
     });
 
     // Create certificate blob
-    const binding = AlgorithmRegistry.get(this.publicKey.type);
+    const binding = AlgorithmRegistry.get(this.publicKey.keyType);
     const certType = binding.getCertificateType();
 
     const certBlob = {

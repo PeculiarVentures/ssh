@@ -2,6 +2,7 @@ import { getCrypto } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
+import { SSHObject } from '../types';
 import {
   parsePublicKey as parseWirePublicKey,
   serializePublicKey as serializeWirePublicKey,
@@ -10,11 +11,15 @@ import {
 
 export type SshPublicKeyExportFormat = 'ssh' | 'spki';
 
-export class SshPublicKey {
+export class SshPublicKey extends SSHObject {
+  public static readonly TYPE = 'public-key';
+  public readonly type = SshPublicKey.TYPE;
+
   private blob: SshPublicKeyBlob;
   private cachedCryptoKey?: CryptoKey;
 
   constructor(blob: SshPublicKeyBlob) {
+    super();
     this.blob = blob;
   }
 
@@ -155,7 +160,7 @@ export class SshPublicKey {
   /**
    * Get key type
    */
-  get type(): SshKeyType {
+  get keyType(): SshKeyType {
     return this.blob.type;
   }
 

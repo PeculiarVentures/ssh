@@ -76,11 +76,11 @@ describe('SshCertificate', () => {
     // Test that we can get public key and signature key
     const publicKey = cert.publicKey;
     expect(publicKey).toBeDefined();
-    expect(publicKey.type).toBe('ssh-rsa');
+    expect(publicKey.keyType).toBe('ssh-rsa');
 
     const signatureKey = cert.signatureKey;
     expect(signatureKey).toBeDefined();
-    expect(signatureKey.type).toBe('ssh-ed25519');
+    expect(signatureKey.keyType).toBe('ssh-ed25519');
 
     // Test critical options (should be empty)
     const criticalOptions = cert.criticalOptions;
@@ -117,12 +117,12 @@ describe('SshCertificate', () => {
     // Test that we can get public key
     const publicKey = cert.publicKey;
     expect(publicKey).toBeDefined();
-    expect(publicKey.type).toBe('ssh-ed25519');
+    expect(publicKey.keyType).toBe('ssh-ed25519');
 
     // Test that we can get signature key
     const signatureKey = cert.signatureKey;
     expect(signatureKey).toBeDefined();
-    expect(signatureKey.type).toBe('ssh-ed25519');
+    expect(signatureKey.keyType).toBe('ssh-ed25519');
 
     // Test critical options (should be empty)
     const criticalOptions = cert.criticalOptions;

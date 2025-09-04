@@ -2,7 +2,7 @@
 export { getCrypto, setCrypto, type CryptoLike } from './crypto';
 
 // Common types
-export type { ByteView, Dict, SshKeyType, SshSignatureAlgo } from './types';
+export type { ByteView, Dict, SSHObject, SshKeyType, SshSignatureAlgo } from './types';
 
 // Error classes
 export * from './errors';
@@ -23,4 +23,4 @@ export * from './cert';
 export { SshSignature } from './signature';
 
 // Unified SSH API
-export { SSH, type ImportOptions, type KeyPairResult } from './ssh';
+export { SSH, type ImportOptions, type KeyPairResult, type SshType } from './ssh';

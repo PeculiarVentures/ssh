@@ -4,6 +4,7 @@ import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { AlgorithmRegistry } from './registry';
 import type { SshKeyType, SshSignatureAlgo } from './types';
+import { SSHObject } from './types';
 import { SshReader } from './wire/reader';
 import {
   parseSignature,
@@ -13,7 +14,10 @@ import {
 } from './wire/signature';
 import { SshWriter } from './wire/writer';
 
-export class SshSignature {
+export class SshSignature extends SSHObject {
+  public static readonly TYPE = 'signature';
+  public readonly type = SshSignature.TYPE;
+
   private blob: SshSignatureBlob;
 
   readonly format: SshSignatureFormat;
@@ -26,6 +30,7 @@ export class SshSignature {
   readonly hashAlgorithm?: string;
 
   private constructor(blob: SshSignatureBlob) {
+    super();
     this.blob = blob;
     this.format = blob.format;
     this.algorithm = blob.algorithm;
@@ -102,6 +107,13 @@ export class SshSignature {
     }
 
     return ['-----BEGIN SSH SIGNATURE-----', ...lines, '-----END SSH SIGNATURE-----'].join('\n');
+  }
+
+  /**
+   * Export to SSH format (convenience method for SSHObject interface)
+   */
+  async toSSH(): Promise<string> {
+    return this.toText();
   }
 
   /**

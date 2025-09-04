@@ -88,7 +88,7 @@ describe('Certificate Compatibility', () => {
           });
 
           // Export certificate to SSH format
-          const certSsh = cert.toSSH();
+          const certSsh = await cert.toSSH();
           writeFileSync(certFile, `${certSsh}\n`);
 
           // Verify certificate with our own implementation first
@@ -163,7 +163,7 @@ describe('Certificate Compatibility', () => {
         const importedCert = await SSH.import(certContent, { format: 'ssh' });
 
         // Verify it's a certificate
-        expect(importedCert instanceof SshCertificate).toBe(true);
+        expect(importedCert.type).toBe('certificate');
         const cert = importedCert as SshCertificate;
         expect(cert.keyId).toBe('test-cert-key-id');
         expect(cert.principals.includes('testuser@example.com')).toBe(true);

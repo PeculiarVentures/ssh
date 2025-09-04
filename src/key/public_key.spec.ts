@@ -12,7 +12,7 @@ describe('SshPublicKey', () => {
       keyData: new Uint8Array([1, 2, 3]),
     };
     const key = new SshPublicKey(blob);
-    expect(key.type).toBe('ssh-rsa');
+    expect(key.keyType).toBe('ssh-rsa');
     expect(key.getBlob()).toEqual(blob);
   });
 
@@ -36,7 +36,7 @@ describe('SshPublicKey', () => {
     // Import back from SSH string
     const importedPublicKey = await SshPublicKey.importPublicFromSsh(sshString);
 
-    expect(importedPublicKey.type).toBe('ssh-ed25519');
+    expect(importedPublicKey.keyType).toBe('ssh-ed25519');
 
     // Export both keys as SPKI for comparison
     const originalSpki = await originalPublicKey.exportPublicSpki();
