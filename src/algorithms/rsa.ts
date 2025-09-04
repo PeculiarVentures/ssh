@@ -295,6 +295,7 @@ export class RsaBinding implements AlgorithmBinding {
     const { signature, algo } = params;
     const writer = new SshWriter();
     writer.writeString(algo);
+    writer.writeUint32(signature.byteLength);
     writer.writeBytes(signature);
     return writer.toUint8Array();
   }
@@ -303,7 +304,8 @@ export class RsaBinding implements AlgorithmBinding {
     const { signature } = params;
     const reader = new SshReader(signature);
     const algo = reader.readString() as SshSignatureAlgo;
-    const sig = reader.readBytes(reader.remaining());
+    const sigLength = reader.readUint32();
+    const sig = reader.readBytes(sigLength);
     return { signature: sig, algo };
   }
 
