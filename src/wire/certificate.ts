@@ -272,6 +272,15 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
     writer.writeBytes(e);
     writer.writeUint32(n.length);
     writer.writeBytes(n);
+  } else if (keyType.startsWith('ecdsa-sha2-')) {
+    // For ECDSA, extract curve name and public point
+    const publicKeyReader = new SshReader(publicKey.keyData);
+    publicKeyReader.readString(); // Skip "ecdsa-sha2-nistp256" etc.
+    const curveName = publicKeyReader.readString();
+    const publicPoint = publicKeyReader.readMpInt();
+    writer.writeString(curveName);
+    writer.writeUint32(publicPoint.length);
+    writer.writeBytes(publicPoint);
   } else {
     throw new UnsupportedKeyTypeError(keyType, [
       'ssh-ed25519',

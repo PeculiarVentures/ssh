@@ -149,6 +149,9 @@ export class SshCertificate {
     } else if (this.data.keyType === 'ssh-rsa') {
       reader.readBytes(reader.readUint32()); // e
       reader.readBytes(reader.readUint32()); // n
+    } else if (this.data.keyType.startsWith('ecdsa-sha2-')) {
+      reader.readString(); // curve name
+      reader.readBytes(reader.readUint32()); // public point
     }
 
     reader.readUint64(); // serial
