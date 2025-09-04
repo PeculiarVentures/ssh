@@ -38,6 +38,7 @@ export interface ExportPrivateToSshParams {
   privateKey: CryptoKey;
   publicKey?: CryptoKey;
   crypto: CryptoLike;
+  jwk?: JsonWebKey;
 }
 
 export interface ImportPrivateFromSshParams {

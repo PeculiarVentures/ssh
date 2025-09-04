@@ -1,5 +1,5 @@
 import { Convert } from 'pvtsutils';
-import { getCrypto } from '../crypto';
+import { getCrypto, type CryptoLike } from '../crypto';
 import {
   EncryptedKeyNotSupportedError,
   InvalidPrivateKeyFormatError,
@@ -19,11 +19,22 @@ export class SshPrivateKey {
   private cryptoKey: CryptoKey;
   private type: SshKeyType;
   private publicKey?: SshPublicKey;
+  private cachedJwk?: JsonWebKey;
 
   private constructor(cryptoKey: CryptoKey, type: SshKeyType, publicKey?: SshPublicKey) {
     this.cryptoKey = cryptoKey;
     this.type = type;
     this.publicKey = publicKey;
+  }
+
+  /**
+   * Get cached JWK
+   */
+  private async getJwk(crypto: CryptoLike): Promise<any> {
+    if (!this.cachedJwk) {
+      this.cachedJwk = await crypto.subtle.exportKey('jwk', this.cryptoKey);
+    }
+    return this.cachedJwk;
   }
 
   /**
@@ -155,8 +166,15 @@ export class SshPrivateKey {
       const publicKey = await this.exportPublicKey(crypto);
       const publicBlob = publicKey.getBlob().keyData;
 
+      // Get cached JWK for optimization
+      const jwk = await this.getJwk(crypto);
+
       // Export algorithm-specific private data
-      const privateData = await binding.exportPrivateToSsh({ privateKey: this.cryptoKey, crypto });
+      const privateData = await binding.exportPrivateToSsh({
+        privateKey: this.cryptoKey,
+        crypto,
+        jwk,
+      });
 
       // Build the complete OpenSSH private key structure
       const writer = new SshWriter();

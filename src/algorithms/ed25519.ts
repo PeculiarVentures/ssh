@@ -93,10 +93,10 @@ export class Ed25519Binding implements AlgorithmBinding {
   }
 
   async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
-    const { privateKey, crypto } = params;
+    const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key as JWK to get private scalar
-    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    const jwk = providedJwk || (await crypto.subtle.exportKey('jwk', privateKey));
     if (!jwk.d || !jwk.x) {
       throw new InvalidKeyDataError('Ed25519 private key JWK missing required parameters');
     }

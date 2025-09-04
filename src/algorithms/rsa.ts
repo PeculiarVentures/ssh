@@ -227,10 +227,10 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
-    const { privateKey, crypto } = params;
+    const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to obtain all RSA parameters
-    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    const jwk = providedJwk || (await crypto.subtle.exportKey('jwk', privateKey));
     if (!jwk.n || !jwk.e || !jwk.d || !jwk.p || !jwk.q) {
       throw new InvalidKeyDataError('RSA JWK missing required parameters');
     }

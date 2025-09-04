@@ -138,10 +138,10 @@ export class EcdsaBinding implements AlgorithmBinding {
   }
 
   async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
-    const { privateKey, crypto } = params;
+    const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to get all parameters
-    const jwk: any = await crypto.subtle.exportKey('jwk', privateKey);
+    const jwk = providedJwk || (await crypto.subtle.exportKey('jwk', privateKey));
     if (!jwk.d || !jwk.x || !jwk.y) {
       throw new InvalidKeyDataError('ECDSA private key JWK missing required parameters');
     }

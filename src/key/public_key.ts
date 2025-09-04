@@ -14,9 +14,24 @@ export type SshPublicKeyExportFormat = 'ssh' | 'spki';
 
 export class SshPublicKey {
   private blob: SshPublicKeyBlob;
+  private cachedCryptoKey?: CryptoKey;
 
   constructor(blob: SshPublicKeyBlob) {
     this.blob = blob;
+  }
+
+  /**
+   * Get cached CryptoKey
+   */
+  private async getCryptoKey(crypto = getCrypto()): Promise<CryptoKey> {
+    if (!this.cachedCryptoKey) {
+      const binding = AlgorithmRegistry.get(this.blob.type);
+      if (!binding) {
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
+      }
+      this.cachedCryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
+    }
+    return this.cachedCryptoKey;
   }
 
   static async importPublicFromSsh(sshKey: string, crypto = getCrypto()): Promise<SshPublicKey> {
@@ -80,11 +95,11 @@ export class SshPublicKey {
     if (format === 'ssh') {
       return serializeWirePublicKey(this.blob);
     } else if (format === 'spki') {
+      const cryptoKey = await this.getCryptoKey(crypto);
       const binding = AlgorithmRegistry.get(this.blob.type);
       if (!binding) {
         throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
       }
-      const cryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
       const spki = await binding.exportPublicSpki({ publicKey: cryptoKey, crypto });
       return new Uint8Array(spki);
     }
@@ -202,11 +217,7 @@ export class SshPublicKey {
    * Convert to WebCrypto CryptoKey for cryptographic operations
    */
   async toCryptoKey(crypto = getCrypto()): Promise<CryptoKey> {
-    const binding = AlgorithmRegistry.get(this.blob.type);
-    if (!binding) {
-      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
-    }
-    return binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
+    return this.getCryptoKey(crypto);
   }
 
   /**
