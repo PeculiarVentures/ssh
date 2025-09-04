@@ -1,9 +1,7 @@
-import { Convert } from 'pvtsutils';
 import { getCrypto } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
-import { getSshKeyTypeFromCryptoKey } from '../utils';
 import {
   parsePublicKey as parseWirePublicKey,
   serializePublicKey as serializeWirePublicKey,
@@ -64,7 +62,7 @@ export class SshPublicKey {
     crypto = getCrypto(),
   ): Promise<SshPublicKey> {
     // Auto-detect SSH key type from CryptoKey if not provided
-    const sshType = type || getSshKeyTypeFromCryptoKey(cryptoKey);
+    const sshType = type || (AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey) as SshKeyType);
 
     const binding = AlgorithmRegistry.get(sshType);
 
@@ -126,71 +124,25 @@ export class SshPublicKey {
   }
 
   /**
-   * Verify signature with convenient interface
+   * Verify raw signature
    */
-  async verifySignature(data: ByteView, signature: string, crypto = getCrypto()): Promise<boolean> {
-    const binding = AlgorithmRegistry.get(this.blob.type);
-
-    // Decode base64 signature
-    const signatureBytes = new Uint8Array(Convert.FromBase64(signature));
-    const decodedSignature = binding.decodeSshSignature({ signature: signatureBytes });
+  async verify(
+    algorithm: string,
+    signature: Uint8Array,
+    data: ByteView,
+    crypto = getCrypto(),
+  ): Promise<boolean> {
+    // Get binding for the signature algorithm
+    const binding = AlgorithmRegistry.get(algorithm);
 
     // Get CryptoKey and verify
     const cryptoKey = await this.toCryptoKey(crypto);
     return binding.verify({
       publicKey: cryptoKey,
-      signature: decodedSignature.signature,
+      signature,
       data,
       crypto,
     });
-  }
-
-  /**
-   * Verify signature with hash parameter (for RSA)
-   */
-  async verifySignatureWithHash(
-    data: ByteView,
-    signature: string,
-    hash: 'SHA-256' | 'SHA-512' = 'SHA-256',
-    crypto = getCrypto(),
-  ): Promise<boolean> {
-    const algo = this.getSignatureAlgorithm(hash);
-    const binding = AlgorithmRegistry.get(algo);
-
-    // Decode base64 signature
-    const signatureBytes = new Uint8Array(Convert.FromBase64(signature));
-    const decodedSignature = binding.decodeSshSignature({ signature: signatureBytes });
-
-    // Import public key with the correct binding
-    const cryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
-
-    return binding.verify({
-      publicKey: cryptoKey,
-      signature: decodedSignature.signature,
-      data,
-      crypto,
-      hash,
-    });
-  }
-
-  /**
-   * Get SSH signature algorithm based on key type and hash
-   */
-  private getSignatureAlgorithm(hash: 'SHA-256' | 'SHA-512'): string {
-    switch (this.blob.type) {
-      case 'ssh-rsa':
-        return hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
-      case 'ssh-ed25519':
-        return 'ssh-ed25519';
-      case 'ecdsa-sha2-nistp256':
-        return 'ecdsa-sha2-nistp256';
-      case 'ecdsa-sha2-nistp384':
-        return 'ecdsa-sha2-nistp384';
-      case 'ecdsa-sha2-nistp521':
-        return 'ecdsa-sha2-nistp521';
-      default:
-        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
-    }
   }
 
   /**

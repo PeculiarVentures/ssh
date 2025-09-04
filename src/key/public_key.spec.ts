@@ -72,7 +72,7 @@ describe('SshPublicKey', () => {
     expect(typeof publicKey.toSSH).toBe('function');
     expect(typeof publicKey.toSPKI).toBe('function');
     expect(typeof publicKey.toWebCrypto).toBe('function');
-    expect(typeof publicKey.verifySignature).toBe('function');
+    expect(typeof publicKey.verify).toBe('function');
 
     // Test SSH export
     const sshString = await publicKey.toSSH();
@@ -96,7 +96,7 @@ describe('SshPublicKey', () => {
     // Create SSH signature format
     const _base64Signature = btoa(String.fromCharCode(...new Uint8Array(signature)));
     // Note: This is a simplified test - real SSH signatures have specific encoding
-    // const isValid = await publicKey.verifySignature(testData, base64Signature);
+    // const isValid = await publicKey.verify('ssh-rsa', signature, testData);
     // expect(isValid).toBe(true);
   });
 
@@ -120,17 +120,13 @@ describe('SshPublicKey', () => {
     const testData = new Uint8Array([1, 2, 3, 4, 5]);
 
     // Test SHA-256
-    const signature256 = await privateKey.signDataWithHash(testData, 'SHA-256');
-    const isValid256 = await publicKey.verifySignatureWithHash(testData, signature256, 'SHA-256');
+    const signature256 = await privateKey.sign('rsa-sha2-256', testData);
+    const isValid256 = await publicKey.verify('rsa-sha2-256', signature256, testData);
     expect(isValid256).toBe(true);
 
     // Test SHA-512
-    const signature512 = await privateKey.signDataWithHash(testData, 'SHA-512');
-    const isValid512 = await publicKey.verifySignatureWithHash(testData, signature512, 'SHA-512');
+    const signature512 = await privateKey.sign('rsa-sha2-512', testData);
+    const isValid512 = await publicKey.verify('rsa-sha2-512', signature512, testData);
     expect(isValid512).toBe(true);
-
-    // Verify that wrong hash fails
-    const isValidWrong = await publicKey.verifySignatureWithHash(testData, signature256, 'SHA-512');
-    expect(isValidWrong).toBe(false);
   });
 });

@@ -6,8 +6,8 @@ import {
   UnsupportedKeyTypeError,
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
-import type { ByteView, SshKeyType, SshSignatureAlgo } from '../types';
-import { encoder, getSshKeyTypeFromCryptoKey } from '../utils';
+import type { ByteView, SshKeyType } from '../types';
+import { encoder } from '../utils';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 import { SshPublicKey } from './public_key';
@@ -134,7 +134,7 @@ export class SshPrivateKey {
    */
   static async fromWebCrypto(cryptoKey: CryptoKey, type?: SshKeyType): Promise<SshPrivateKey> {
     // Auto-detect SSH key type from CryptoKey if not provided
-    const sshType = type || getSshKeyTypeFromCryptoKey(cryptoKey);
+    const sshType = type || (AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey) as SshKeyType);
     return new SshPrivateKey(cryptoKey, sshType);
   }
 
@@ -272,73 +272,13 @@ export class SshPrivateKey {
   }
 
   /**
-   * Sign data with convenient interface
+   * Sign data and return raw signature
    */
-  async signData(data: ByteView, algo?: string, crypto = getCrypto()): Promise<string> {
-    return this.sign(data, algo, crypto);
-  }
-
-  /**
-   * Sign data with hash parameter (for RSA)
-   */
-  async signDataWithHash(
-    data: ByteView,
-    hash: 'SHA-256' | 'SHA-512' = 'SHA-256',
-    crypto = getCrypto(),
-  ): Promise<string> {
-    // For RSA, we need to use the correct binding based on hash
-    const signatureAlgorithm = this.getSignatureAlgorithm(hash);
-    const binding = AlgorithmRegistry.get(signatureAlgorithm);
-
-    const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto, hash });
-    const encoded = binding.encodeSshSignature({
-      signature,
-      algo: signatureAlgorithm as SshSignatureAlgo,
-    });
-    return Convert.ToBase64(encoded);
-  }
-
-  /**
-   * Get SSH signature algorithm based on key type and hash
-   */
-  private getSignatureAlgorithm(hash: 'SHA-256' | 'SHA-512'): string {
-    switch (this.type) {
-      case 'ssh-rsa':
-        // For ssh-rsa type, use rsa-sha2-* based on hash
-        return hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
-      case 'ecdsa-sha2-nistp256':
-        return 'ecdsa-sha2-nistp256';
-      case 'ecdsa-sha2-nistp384':
-        return 'ecdsa-sha2-nistp384';
-      case 'ecdsa-sha2-nistp521':
-        return 'ecdsa-sha2-nistp521';
-      case 'ssh-ed25519':
-        return 'ssh-ed25519';
-      default:
-        return this.type;
-    }
-  }
-
-  /**
-   * Sign data and return SSH signature
-   */
-  async sign(data: ByteView, algo?: string, crypto = getCrypto()): Promise<string> {
-    let binding;
-    let sshAlgo: string;
-
-    if (algo) {
-      // If algorithm is specified, use it to determine the binding
-      binding = AlgorithmRegistry.get(algo);
-      sshAlgo = algo;
-    } else {
-      // Default to key type
-      binding = AlgorithmRegistry.get(this.type);
-      sshAlgo = this.type;
-    }
+  async sign(algo: string, data: ByteView, crypto = getCrypto()): Promise<Uint8Array> {
+    const binding = AlgorithmRegistry.get(algo);
 
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
-    const encoded = binding.encodeSshSignature({ signature, algo: sshAlgo as any });
-    return Convert.ToBase64(encoded);
+    return new Uint8Array(signature);
   }
 
   /**

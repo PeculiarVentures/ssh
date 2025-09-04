@@ -97,7 +97,6 @@ describe('SshPrivateKey', () => {
     expect(typeof key.toWebCrypto).toBe('function');
     expect(typeof key.toPKCS8).toBe('function');
     expect(typeof key.getPublicKey).toBe('function');
-    expect(typeof key.signData).toBe('function');
 
     // Test WebCrypto method
     const cryptoKey = key.toWebCrypto();
@@ -115,8 +114,8 @@ describe('SshPrivateKey', () => {
 
     // Test signing with convenience method
     const testData = new Uint8Array([1, 2, 3, 4, 5]);
-    const signature = await key.signData(testData);
-    expect(typeof signature).toBe('string');
+    const signature = await key.sign(key.keyType, testData);
+    expect(signature).toBeInstanceOf(Uint8Array);
     expect(signature.length).toBeGreaterThan(0);
   });
 
