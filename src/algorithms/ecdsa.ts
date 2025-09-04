@@ -37,6 +37,45 @@ export class EcdsaBinding implements AlgorithmBinding {
     this.namedCurve = namedCurve;
   }
 
+  /**
+   * Get the hash algorithm for this ECDSA curve
+   */
+  private getHashAlgorithm(): 'SHA-256' | 'SHA-384' | 'SHA-512' {
+    switch (this.namedCurve) {
+      case 'P-256':
+        return 'SHA-256';
+      case 'P-384':
+        return 'SHA-384';
+      case 'P-521':
+        return 'SHA-512';
+      default:
+        return 'SHA-256'; // fallback
+    }
+  }
+
+  /**
+   * Get the expected coordinate length for this ECDSA curve
+   */
+  private getExpectedLength(): number {
+    switch (this.namedCurve) {
+      case 'P-256':
+        return 32;
+      case 'P-384':
+        return 48;
+      case 'P-521':
+        return 66;
+      default:
+        return 32; // fallback
+    }
+  }
+
+  /**
+   * Get the expected signature coordinate length (r or s) for this ECDSA curve
+   */
+  private getSignatureCoordLength(): number {
+    return this.getExpectedLength();
+  }
+
   async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
@@ -266,11 +305,22 @@ export class EcdsaBinding implements AlgorithmBinding {
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
-    const { privateKey, data, crypto } = params;
+    const { privateKey, data, crypto, hash } = params;
+
+    // Get the correct hash algorithm for this curve
+    const expectedHash = this.getHashAlgorithm();
+
+    // Validate hash parameter if provided
+    if (hash && hash !== expectedHash) {
+      throw new InvalidKeyDataError(
+        `ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`,
+      );
+    }
+
     return crypto.subtle.sign(
       {
         name: 'ECDSA',
-        hash: 'SHA-256',
+        hash: expectedHash,
       },
       privateKey,
       BufferSourceConverter.toArrayBuffer(data),
@@ -278,11 +328,22 @@ export class EcdsaBinding implements AlgorithmBinding {
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
-    const { publicKey, signature, data, crypto } = params;
+    const { publicKey, signature, data, crypto, hash } = params;
+
+    // Get the correct hash algorithm for this curve
+    const expectedHash = this.getHashAlgorithm();
+
+    // Validate hash parameter if provided
+    if (hash && hash !== expectedHash) {
+      throw new InvalidKeyDataError(
+        `ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`,
+      );
+    }
+
     return crypto.subtle.verify(
       {
         name: 'ECDSA',
-        hash: 'SHA-256',
+        hash: expectedHash,
       },
       publicKey,
       BufferSourceConverter.toArrayBuffer(signature),
@@ -292,6 +353,30 @@ export class EcdsaBinding implements AlgorithmBinding {
 
   encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array {
     const { signature, algo } = params;
+
+    // For ECDSA, convert from raw format to SSH format (r+s)
+    if (algo.startsWith('ecdsa-sha2-')) {
+      const sigBytes = signature instanceof Uint8Array ? signature : new Uint8Array(signature);
+
+      // Split concatenated r+s back into components
+      const coordLength = this.getSignatureCoordLength();
+      const r = sigBytes.slice(0, coordLength);
+      const s = sigBytes.slice(coordLength);
+
+      const writer = new SshWriter();
+      writer.writeString(algo);
+
+      const sigWriter = new SshWriter();
+      sigWriter.writeMpInt(r, true);
+      sigWriter.writeMpInt(s, true);
+      const sigData = sigWriter.toUint8Array();
+
+      writer.writeUint32(sigData.length);
+      writer.writeBytes(sigData);
+      return writer.toUint8Array();
+    }
+
+    // For other algorithms, use default encoding
     const writer = new SshWriter();
     writer.writeString(algo);
     writer.writeUint32(signature.byteLength);
@@ -305,6 +390,43 @@ export class EcdsaBinding implements AlgorithmBinding {
     const algo = reader.readString() as SshSignatureAlgo;
     const sigLength = reader.readUint32();
     const sig = reader.readBytes(sigLength);
+
+    // For ECDSA, convert from SSH format (r+s) to raw format for WebCrypto
+    if (algo.startsWith('ecdsa-sha2-')) {
+      const sigReader = new SshReader(sig);
+      let r = sigReader.readMpInt();
+      let s = sigReader.readMpInt();
+
+      // Remove leading zero bytes if present (SSH encoding may add them)
+      if (r[0] === 0x00 && r.length > 1 && (r[1] & 0x80) === 0) {
+        r = r.slice(1);
+      }
+      if (s[0] === 0x00 && s.length > 1 && (s[1] & 0x80) === 0) {
+        s = s.slice(1);
+      }
+
+      // Ensure we have the correct length for the curve
+      const expectedLength = this.getExpectedLength();
+
+      // Pad with leading zeros if needed
+      const rPadded = new Uint8Array(expectedLength);
+      const sPadded = new Uint8Array(expectedLength);
+      if (r.length <= expectedLength) {
+        rPadded.set(r, expectedLength - r.length);
+      } else {
+        rPadded.set(r.slice(r.length - expectedLength), 0);
+      }
+      if (s.length <= expectedLength) {
+        sPadded.set(s, expectedLength - s.length);
+      } else {
+        sPadded.set(s.slice(s.length - expectedLength), 0);
+      }
+
+      // Concatenate r and s (like ssh-sig does)
+      const rawSignature = new Uint8Array([...rPadded, ...sPadded]);
+      return { signature: rawSignature, algo };
+    }
+
     return { signature: sig, algo };
   }
 

@@ -109,8 +109,11 @@ describe('ECDSA Algorithm', () => {
     expect(ecdsaBinding.encodeSshSignature).toBeDefined();
     expect(ecdsaBinding.decodeSshSignature).toBeDefined();
 
-    // Create mock ECDSA signature (DER format, simplified for test)
-    const mockSignature = new Uint8Array([0x30, 0x44, 0x02, 0x20, 0x01, 0x02, 0x03, 0x04]);
+    // Create mock ECDSA signature (raw r+s concatenated, 64 bytes for P-256)
+    const mockSignature = new Uint8Array(64);
+    for (let i = 0; i < 64; i++) {
+      mockSignature[i] = i % 256;
+    }
 
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSshSignature({
@@ -132,8 +135,11 @@ describe('ECDSA Algorithm', () => {
     expect(ecdsaBinding.encodeSshSignature).toBeDefined();
     expect(ecdsaBinding.decodeSshSignature).toBeDefined();
 
-    // Create mock ECDSA signature (DER format, simplified for test)
-    const mockSignature = new Uint8Array([0x30, 0x64, 0x02, 0x30, 0x01, 0x02, 0x03, 0x04]);
+    // Create mock ECDSA signature (raw r+s concatenated, 96 bytes for P-384)
+    const mockSignature = new Uint8Array(96);
+    for (let i = 0; i < 96; i++) {
+      mockSignature[i] = i % 256;
+    }
 
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSshSignature({
@@ -155,8 +161,11 @@ describe('ECDSA Algorithm', () => {
     expect(ecdsaBinding.encodeSshSignature).toBeDefined();
     expect(ecdsaBinding.decodeSshSignature).toBeDefined();
 
-    // Create mock ECDSA signature (DER format, simplified for test)
-    const mockSignature = new Uint8Array([0x30, 0x81, 0x88, 0x02, 0x42, 0x01, 0x02, 0x03]);
+    // Create mock ECDSA signature (raw r+s concatenated, 132 bytes for P-521)
+    const mockSignature = new Uint8Array(132);
+    for (let i = 0; i < 132; i++) {
+      mockSignature[i] = i % 256;
+    }
 
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSshSignature({
