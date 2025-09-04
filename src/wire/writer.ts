@@ -61,8 +61,12 @@ export class SshWriter {
     this.writeBytes(bytes);
   }
 
+  /**
+   * Returns the written data as a Uint8Array
+   * @returns A view (subarray) of the internal buffer (not a copy)
+   */
   toUint8Array(): Uint8Array {
-    return this.buffer.slice(0, this.offset);
+    return this.buffer.subarray(0, this.offset);
   }
 
   getOffset(): number {

@@ -40,6 +40,7 @@ export class SshReader {
   /**
    * Reads specified number of bytes from the buffer
    * @param length Number of bytes to read
+   * @returns A view (subarray) of the buffer data (not a copy)
    * @throws {UnexpectedEOFError} When not enough bytes available
    */
   readBytes(length: number): Uint8Array {
@@ -49,7 +50,7 @@ export class SshReader {
     if (this.offset + length > this.buffer.length) {
       throw new UnexpectedEOFError(length, this.buffer.length - this.offset);
     }
-    const result = this.buffer.slice(this.offset, this.offset + length);
+    const result = this.buffer.subarray(this.offset, this.offset + length);
     this.offset += length;
     return result;
   }
