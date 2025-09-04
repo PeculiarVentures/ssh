@@ -257,14 +257,15 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
-    const { privateKey, data, crypto, hash = this.hash } = params;
+    const { privateKey, data, crypto, hash: _hash = this.hash } = params;
 
-    // If the key's hash doesn't match the requested hash, re-import it
-    let keyToUse = privateKey;
-    if (hash !== this.hash) {
-      const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
-      keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
+    if (!privateKey.extractable) {
+      throw new InvalidKeyDataError('Private key is not extractable');
     }
+
+    // Re-import the key with the correct hash
+    const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
+    const keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
 
     return crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
@@ -274,14 +275,15 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
-    const { publicKey, signature, data, crypto, hash = this.hash } = params;
+    const { publicKey, signature, data, crypto, hash: _hash = this.hash } = params;
 
-    // If the key's hash doesn't match the requested hash, re-import it
-    let keyToUse = publicKey;
-    if (hash !== this.hash) {
-      const spki = await this.exportPublicSpki({ publicKey, crypto });
-      keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
+    if (!publicKey.extractable) {
+      throw new InvalidKeyDataError('Public key is not extractable');
     }
+
+    // Re-import the key with the correct hash
+    const spki = await this.exportPublicSpki({ publicKey, crypto });
+    const keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
 
     return crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',

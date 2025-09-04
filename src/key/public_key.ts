@@ -163,17 +163,21 @@ export class SshPublicKey {
     hash: 'SHA-256' | 'SHA-512' = 'SHA-256',
     crypto = getCrypto(),
   ): Promise<boolean> {
-    const binding = AlgorithmRegistry.get(this.blob.type);
+    const algo = this.getSignatureAlgorithm(hash);
+    const binding = AlgorithmRegistry.get(algo);
     if (!binding) {
-      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.blob.type}`);
+      throw new UnsupportedAlgorithmError(`Unsupported algorithm: ${algo}`);
     }
 
     // Decode base64 signature
     const signatureBytes = new Uint8Array(Convert.FromBase64(signature));
     const decodedSignature = binding.decodeSshSignature({ signature: signatureBytes });
 
+    // Import public key with the correct binding
+    const cryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
+
     return binding.verify({
-      publicKey: await this.toCryptoKey(crypto),
+      publicKey: cryptoKey,
       signature: decodedSignature.signature,
       data,
       crypto,

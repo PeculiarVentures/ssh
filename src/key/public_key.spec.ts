@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getCrypto } from '../crypto';
+import { SshPrivateKey } from './private_key';
 import { SshPublicKey } from './public_key';
 
 describe('SshPublicKey', () => {
@@ -97,5 +98,39 @@ describe('SshPublicKey', () => {
     // Note: This is a simplified test - real SSH signatures have specific encoding
     // const isValid = await publicKey.verifySignature(testData, base64Signature);
     // expect(isValid).toBe(true);
+  });
+
+  it('should verify RSA signatures with different hashes', async () => {
+    // Generate RSA key pair
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]), // 65537
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    // Create SshPrivateKey and SshPublicKey
+    const privateKey = await SshPrivateKey.fromWebCrypto(keyPair.privateKey, 'ssh-rsa');
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey, 'ssh-rsa');
+
+    const testData = new Uint8Array([1, 2, 3, 4, 5]);
+
+    // Test SHA-256
+    const signature256 = await privateKey.signDataWithHash(testData, 'SHA-256');
+    const isValid256 = await publicKey.verifySignatureWithHash(testData, signature256, 'SHA-256');
+    expect(isValid256).toBe(true);
+
+    // Test SHA-512
+    const signature512 = await privateKey.signDataWithHash(testData, 'SHA-512');
+    const isValid512 = await publicKey.verifySignatureWithHash(testData, signature512, 'SHA-512');
+    expect(isValid512).toBe(true);
+
+    // Verify that wrong hash fails
+    const isValidWrong = await publicKey.verifySignatureWithHash(testData, signature256, 'SHA-512');
+    expect(isValidWrong).toBe(false);
   });
 });
