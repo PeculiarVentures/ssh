@@ -67,10 +67,28 @@ export class SshWriter {
     this.writeBytes(bytes);
   }
 
-  writeMpInt(value: ByteView): void {
+  writeMpInt(value: ByteView, sshEncoding = false): void {
     const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : value;
-    this.writeUint32(bytes.length);
-    this.writeBytes(bytes);
+
+    if (sshEncoding && bytes.length > 0 && (bytes[0] & 0x80) !== 0) {
+      // SSH wire protocol: if the high bit is set, prepend a zero byte
+      // to ensure the number is interpreted as positive
+      const paddedBytes = new Uint8Array(bytes.length + 1);
+      paddedBytes[0] = 0x00;
+      paddedBytes.set(bytes, 1);
+      this.writeUint32(paddedBytes.length);
+      this.writeBytes(paddedBytes);
+    } else {
+      this.writeUint32(bytes.length);
+      this.writeBytes(bytes);
+    }
+  }
+
+  /**
+   * @deprecated Use writeMpInt(value, true) instead
+   */
+  writeMpIntSsh(value: ByteView): void {
+    this.writeMpInt(value, true);
   }
 
   /**

@@ -66,12 +66,38 @@ export class SshReader {
   }
 
   /**
+   * Peeks at a UTF-8 string without advancing the offset
+   * @param length Number of bytes to peek at
+   */
+  peekString(length: number): string {
+    if (this.offset + length > this.buffer.length) {
+      throw new UnexpectedEOFError(length, this.buffer.length - this.offset);
+    }
+    const bytes = this.buffer.subarray(this.offset, this.offset + length);
+    return decoder.decode(bytes);
+  }
+
+  /**
    * Reads an arbitrary precision integer (mpint) with 32-bit length prefix
    * SSH wire protocol format: length (4 bytes) + integer data (big-endian)
    */
-  readMpInt(): Uint8Array {
+  readMpInt(sshEncoding = false): Uint8Array {
     const length = this.readUint32();
-    return this.readBytes(length);
+    const bytes = this.readBytes(length);
+
+    if (sshEncoding && bytes.length > 1 && bytes[0] === 0x00) {
+      // Remove leading zero byte if present (added for positive numbers with high bit set)
+      return bytes.subarray(1);
+    }
+
+    return bytes;
+  }
+
+  /**
+   * @deprecated Use readMpInt(true) instead
+   */
+  readMpIntSsh(): Uint8Array {
+    return this.readMpInt(true);
   }
 
   remaining(): number {
