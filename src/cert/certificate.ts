@@ -16,6 +16,8 @@ export type SshCertificateType = 'user' | 'host';
 export class SshCertificate {
   private _blob: SshCertificateBlob;
   private data: SshCertificateData;
+  private _validAfter: bigint;
+  private _validBefore: bigint;
 
   readonly keyId: string;
   readonly principals: string[];
@@ -31,6 +33,8 @@ export class SshCertificate {
   private constructor(blob: SshCertificateBlob) {
     this._blob = blob;
     this.data = parseCertificateData(blob.keyData);
+    this._validAfter = this.data.validAfter;
+    this._validBefore = this.data.validBefore;
     this.keyId = this.data.keyId;
     this.principals = this.data.validPrincipals;
     this.certType = this.data.type;
@@ -87,7 +91,12 @@ export class SshCertificate {
   }
 
   public validate(date: Date = new Date()): boolean {
-    return date >= this.validAfter && date <= this.validBefore;
+    const ts = BigInt(Math.floor(date.getTime() / 1000));
+    const after = this._validAfter;
+    const before = this._validBefore;
+    const INFINITY = 0xffffffffffffffffn;
+    const upper = before === INFINITY ? ts : before;
+    return ts >= after && ts <= upper;
   }
 
   /**
