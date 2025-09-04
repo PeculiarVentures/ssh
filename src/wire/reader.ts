@@ -1,5 +1,6 @@
 import { InvalidFormatError, UnexpectedEOFError } from '../errors.js';
 import type { ByteView } from '../types';
+import { decoder } from '../utils';
 
 export class SshReader {
   private buffer: Uint8Array;
@@ -60,7 +61,7 @@ export class SshReader {
   readString(): string {
     const length = this.readUint32();
     const bytes = this.readBytes(length);
-    return new TextDecoder().decode(bytes);
+    return decoder.decode(bytes);
   }
 
   /**

@@ -2,6 +2,7 @@ import { Convert } from 'pvtsutils';
 import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
+import { decoder, encoder } from '../utils';
 import type { SshPublicKeyBlob } from './public_key';
 import { SshReader } from './reader';
 import { SshWriter } from './writer';
@@ -134,7 +135,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
       try {
         const name = optionsReader.readString();
         const valueData = optionsReader.readBytes(optionsReader.readUint32());
-        const value = valueData.length === 0 ? '' : new TextDecoder().decode(valueData);
+        const value = valueData.length === 0 ? '' : decoder.decode(valueData);
         criticalOptions[name] = value;
       } catch {
         break; // End of options data
@@ -153,7 +154,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
       try {
         const name = extReader.readString();
         const valueData = extReader.readBytes(extReader.readUint32());
-        const value = valueData.length === 0 ? '' : new TextDecoder().decode(valueData);
+        const value = valueData.length === 0 ? '' : decoder.decode(valueData);
         extensions[name] = value;
       } catch {
         break; // End of extensions data
@@ -306,7 +307,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   const optionsWriter = new SshWriter();
   for (const [name, value] of Object.entries(criticalOptions)) {
     optionsWriter.writeString(name);
-    const valueBytes = new TextEncoder().encode(value);
+    const valueBytes = encoder.encode(value);
     optionsWriter.writeUint32(valueBytes.length);
     optionsWriter.writeBytes(valueBytes);
   }
@@ -317,7 +318,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   const extensionsWriter = new SshWriter();
   for (const [name, value] of Object.entries(extensions)) {
     extensionsWriter.writeString(name);
-    const valueBytes = new TextEncoder().encode(value);
+    const valueBytes = encoder.encode(value);
     extensionsWriter.writeUint32(valueBytes.length);
     extensionsWriter.writeBytes(valueBytes);
   }

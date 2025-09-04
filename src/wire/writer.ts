@@ -1,5 +1,6 @@
 import { InvalidFormatError } from '../errors';
 import type { ByteView } from '../types';
+import { encoder } from '../utils';
 
 export class SshWriter {
   private buffer: Uint8Array;
@@ -49,7 +50,7 @@ export class SshWriter {
   }
 
   writeString(value: string): void {
-    const bytes = new TextEncoder().encode(value);
+    const bytes = encoder.encode(value);
     this.writeUint32(bytes.length);
     this.writeBytes(bytes);
   }

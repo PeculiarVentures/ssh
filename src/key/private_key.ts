@@ -8,7 +8,7 @@ import {
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType, SshSignatureAlgo } from '../types';
-import { getSshKeyTypeFromCryptoKey } from '../utils';
+import { encoder, getSshKeyTypeFromCryptoKey } from '../utils';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 import { SshPublicKey } from './public_key';
@@ -162,7 +162,7 @@ export class SshPrivateKey {
       const writer = new SshWriter();
 
       // Magic string "openssh-key-v1\0"
-      writer.writeBytes(new TextEncoder().encode('openssh-key-v1\0'));
+      writer.writeBytes(encoder.encode('openssh-key-v1\0'));
 
       // Cipher, KDF, KDF options (unencrypted)
       writer.writeString('none');
