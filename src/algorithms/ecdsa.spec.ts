@@ -102,6 +102,75 @@ describe('ECDSA Algorithm', () => {
     expect(new Uint8Array(parsedPubKey)).toEqual(mockPubKey);
   });
 
+  it('should encode and decode SSH signature correctly for P-256', () => {
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
+    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+
+    // Create mock ECDSA signature (DER format, simplified for test)
+    const mockSignature = new Uint8Array([0x30, 0x44, 0x02, 0x20, 0x01, 0x02, 0x03, 0x04]);
+
+    // Encode to SSH format
+    const sshSignature = ecdsaBinding.encodeSshSignature({
+      signature: mockSignature,
+      algo: 'ecdsa-sha2-nistp256',
+    });
+
+    // Decode back
+    const decoded = ecdsaBinding.decodeSshSignature({
+      signature: sshSignature,
+    });
+
+    expect(decoded.algo).toBe('ecdsa-sha2-nistp256');
+    expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
+  });
+
+  it('should encode and decode SSH signature correctly for P-384', () => {
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+
+    // Create mock ECDSA signature (DER format, simplified for test)
+    const mockSignature = new Uint8Array([0x30, 0x64, 0x02, 0x30, 0x01, 0x02, 0x03, 0x04]);
+
+    // Encode to SSH format
+    const sshSignature = ecdsaBinding.encodeSshSignature({
+      signature: mockSignature,
+      algo: 'ecdsa-sha2-nistp384',
+    });
+
+    // Decode back
+    const decoded = ecdsaBinding.decodeSshSignature({
+      signature: sshSignature,
+    });
+
+    expect(decoded.algo).toBe('ecdsa-sha2-nistp384');
+    expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
+  });
+
+  it('should encode and decode SSH signature correctly for P-521', () => {
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+
+    // Create mock ECDSA signature (DER format, simplified for test)
+    const mockSignature = new Uint8Array([0x30, 0x81, 0x88, 0x02, 0x42, 0x01, 0x02, 0x03]);
+
+    // Encode to SSH format
+    const sshSignature = ecdsaBinding.encodeSshSignature({
+      signature: mockSignature,
+      algo: 'ecdsa-sha2-nistp521',
+    });
+
+    // Decode back
+    const decoded = ecdsaBinding.decodeSshSignature({
+      signature: sshSignature,
+    });
+
+    expect(decoded.algo).toBe('ecdsa-sha2-nistp521');
+    expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
+  });
+
   it('should return correct certificate types', () => {
     expect(AlgorithmRegistry.get('ecdsa-sha2-nistp256').getCertificateType?.()).toBe(
       'ecdsa-sha2-nistp256-cert-v01@openssh.com',

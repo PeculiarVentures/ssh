@@ -39,6 +39,29 @@ describe('RSA Algorithm', () => {
     expect(() => importReader.readMpInt()).not.toThrow();
   });
 
+  it('should encode and decode SSH signature correctly', () => {
+    const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
+    expect(rsaBinding.encodeSshSignature).toBeDefined();
+    expect(rsaBinding.decodeSshSignature).toBeDefined();
+
+    // Create mock RSA signature (DER format, simplified for test)
+    const mockSignature = new Uint8Array([0x30, 0x06, 0x02, 0x01, 0x00, 0x02, 0x01, 0x01]);
+
+    // Encode to SSH format
+    const sshSignature = rsaBinding.encodeSshSignature({
+      signature: mockSignature,
+      algo: 'rsa-sha2-256',
+    });
+
+    // Decode back
+    const decoded = rsaBinding.decodeSshSignature({
+      signature: sshSignature,
+    });
+
+    expect(decoded.algo).toBe('rsa-sha2-256');
+    expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
+  });
+
   it('should return correct certificate type', () => {
     const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
     expect(rsaBinding.getCertificateType?.()).toBe('ssh-rsa-cert-v01@openssh.com');
