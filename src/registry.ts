@@ -127,9 +127,13 @@ export class AlgorithmRegistry {
 }
 
 // Import and register algorithms
-import { EcdsaP256Binding, EcdsaP384Binding, EcdsaP521Binding } from './algorithms/ecdsa';
-import { Ed25519Binding } from './algorithms/ed25519';
-import { RsaBinding } from './algorithms/rsa';
+import {
+  EcdsaP256Binding,
+  EcdsaP384Binding,
+  EcdsaP521Binding,
+  Ed25519Binding,
+  RsaBinding,
+} from './algorithms';
 
 // Register Ed25519
 AlgorithmRegistry.register('ssh-ed25519', new Ed25519Binding());
