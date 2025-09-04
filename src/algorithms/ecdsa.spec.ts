@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { ecdsaP384Key, ecdsaP521Key } from '../../tests/utils/testFixtures';
+import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
 import { SshReader, SshWriter } from '../wire';
 
@@ -169,6 +171,98 @@ describe('ECDSA Algorithm', () => {
 
     expect(decoded.algo).toBe('ecdsa-sha2-nistp521');
     expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
+  });
+
+  it('should import P-384 public key from SSH format', async () => {
+    const crypto = getCrypto();
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+
+    // Parse the SSH key string to get the key data
+    const parsed = ecdsaP384Key.split(' ');
+    const base64Data = parsed[1];
+    const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+
+    // Import the public key
+    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+      blob: keyData,
+      crypto,
+    });
+
+    expect(cryptoKey).toBeDefined();
+    expect(cryptoKey.type).toBe('public');
+    expect((cryptoKey.algorithm as any).name).toBe('ECDSA');
+    expect((cryptoKey.algorithm as any).namedCurve).toBe('P-384');
+  });
+
+  it('should import P-521 public key from SSH format', async () => {
+    const crypto = getCrypto();
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+
+    // Parse the SSH key string to get the key data
+    const parsed = ecdsaP521Key.split(' ');
+    const base64Data = parsed[1];
+    const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+
+    // Import the public key
+    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+      blob: keyData,
+      crypto,
+    });
+
+    expect(cryptoKey).toBeDefined();
+    expect(cryptoKey.type).toBe('public');
+    expect((cryptoKey.algorithm as any).name).toBe('ECDSA');
+    expect((cryptoKey.algorithm as any).namedCurve).toBe('P-521');
+  });
+
+  it('should round-trip P-384 public key import/export', async () => {
+    const crypto = getCrypto();
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+
+    // Parse the SSH key string to get the key data
+    const parsed = ecdsaP384Key.split(' ');
+    const base64Data = parsed[1];
+    const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+
+    // Import the public key
+    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+      blob: originalKeyData,
+      crypto,
+    });
+
+    // Export it back to SSH format
+    const exportedKeyData = await ecdsaBinding.exportPublicToSsh({
+      publicKey: cryptoKey,
+      crypto,
+    });
+
+    // Compare the original and exported key data
+    expect(new Uint8Array(exportedKeyData)).toEqual(originalKeyData);
+  });
+
+  it('should round-trip P-521 public key import/export', async () => {
+    const crypto = getCrypto();
+    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+
+    // Parse the SSH key string to get the key data
+    const parsed = ecdsaP521Key.split(' ');
+    const base64Data = parsed[1];
+    const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+
+    // Import the public key
+    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+      blob: originalKeyData,
+      crypto,
+    });
+
+    // Export it back to SSH format
+    const exportedKeyData = await ecdsaBinding.exportPublicToSsh({
+      publicKey: cryptoKey,
+      crypto,
+    });
+
+    // Compare the original and exported key data
+    expect(new Uint8Array(exportedKeyData)).toEqual(originalKeyData);
   });
 
   it('should return correct certificate types', () => {

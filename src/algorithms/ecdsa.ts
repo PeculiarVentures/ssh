@@ -54,11 +54,13 @@ export class EcdsaBinding implements AlgorithmBinding {
     const q = reader.readMpInt();
 
     // Convert to JWK format
+    // Calculate coordinate length based on curve (similar to importPrivateFromSsh)
+    const coordLength = Math.floor((q.length - 1) / 2);
     const jwk = {
       kty: 'EC' as const,
       crv: this.namedCurve,
-      x: Convert.ToBase64Url(q.slice(1, 33)), // x coordinate (32 bytes)
-      y: Convert.ToBase64Url(q.slice(33)), // y coordinate (32 bytes)
+      x: Convert.ToBase64Url(q.slice(1, 1 + coordLength)), // x coordinate
+      y: Convert.ToBase64Url(q.slice(1 + coordLength)), // y coordinate
     };
 
     return crypto.subtle.importKey(
