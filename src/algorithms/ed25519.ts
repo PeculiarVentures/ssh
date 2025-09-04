@@ -42,16 +42,9 @@ export class Ed25519Binding implements AlgorithmBinding {
     const publicKeyBytes = reader.readBytes(keyLength);
 
     // Import to WebCrypto
-    return crypto.subtle.importKey(
-      'raw',
-      publicKeyBytes as any,
-      {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
-      },
-      true,
-      ['verify'],
-    );
+    return crypto.subtle.importKey('raw', publicKeyBytes as BufferSource, 'Ed25519', true, [
+      'verify',
+    ]);
   }
 
   async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
@@ -78,16 +71,7 @@ export class Ed25519Binding implements AlgorithmBinding {
   async importPublicSpki(params: ImportPublicSpkiParams): Promise<CryptoKey> {
     const { spki, crypto } = params;
 
-    return crypto.subtle.importKey(
-      'spki',
-      spki as any,
-      {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
-      },
-      true,
-      ['verify'],
-    );
+    return crypto.subtle.importKey('spki', spki as BufferSource, 'Ed25519', true, ['verify']);
   }
 
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer> {
@@ -99,16 +83,7 @@ export class Ed25519Binding implements AlgorithmBinding {
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
     const { pkcs8, crypto } = params;
 
-    return crypto.subtle.importKey(
-      'pkcs8',
-      pkcs8 as any,
-      {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
-      },
-      true,
-      ['sign'],
-    );
+    return crypto.subtle.importKey('pkcs8', pkcs8 as BufferSource, 'Ed25519', true, ['sign']);
   }
 
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
@@ -223,16 +198,7 @@ export class Ed25519Binding implements AlgorithmBinding {
       x: Convert.ToBase64Url(_publicKeyBytes),
     };
 
-    return crypto.subtle.importKey(
-      'jwk',
-      jwk,
-      {
-        name: 'Ed25519',
-        namedCurve: 'Ed25519',
-      },
-      true,
-      ['sign'],
-    );
+    return crypto.subtle.importKey('jwk', jwk, 'Ed25519', true, ['sign']);
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
