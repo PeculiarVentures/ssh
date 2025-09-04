@@ -244,7 +244,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   const writer = new SshWriter();
 
   // Write certificate type
-  const certType = getCertificateType(keyType);
+  const certType = keyType + '-cert-v01@openssh.com';
   writer.writeString(certType);
 
   // Write nonce
@@ -341,9 +341,4 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   }
 
   return writer.toUint8Array();
-}
-
-function getCertificateType(keyType: string): string {
-  const binding = AlgorithmRegistry.get(keyType);
-  return binding.getCertificateType();
 }
