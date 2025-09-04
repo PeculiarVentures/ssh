@@ -4,10 +4,11 @@ import { getCrypto } from './crypto';
 import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from './errors';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
+import { SshSignature } from './signature';
 import type { ByteView, SshKeyType } from './types';
 
 export interface ImportOptions {
-  format?: 'ssh' | 'pkcs8' | 'spki';
+  format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
   type?: SshKeyType;
 }
 
@@ -46,7 +47,7 @@ export class SSH {
     data: string | ByteView,
     options: ImportOptions = {},
     crypto = getCrypto(),
-  ): Promise<SshPrivateKey | SshPublicKey | SshCertificate> {
+  ): Promise<SshPrivateKey | SshPublicKey | SshCertificate | SshSignature> {
     const { format, type } = options;
 
     // If format is not specified, try to auto-detect
@@ -71,6 +72,9 @@ export class SSH {
           throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
         }
         return SshPublicKey.importPublicSpki(data as ByteView, type, crypto);
+
+      case 'signature':
+        return SSH.importSignature(data);
 
       default:
         throw new InvalidFormatError(`Unsupported format: ${format}`);
@@ -187,7 +191,7 @@ export class SSH {
   /**
    * Auto-detect format from data
    */
-  private static detectFormat(data: string | ByteView): 'ssh' | 'pkcs8' | 'spki' {
+  private static detectFormat(data: string | ByteView): 'ssh' | 'pkcs8' | 'spki' | 'signature' {
     if (typeof data === 'string') {
       const trimmed = data.trim();
 
@@ -206,6 +210,11 @@ export class SSH {
         return 'ssh';
       }
 
+      // SSH SIGNATURE
+      if (trimmed.startsWith('-----BEGIN SSH SIGNATURE-----')) {
+        return 'signature';
+      }
+
       // PKCS#8 private key
       if (trimmed.startsWith('-----BEGIN PRIVATE KEY-----')) {
         return 'pkcs8';
@@ -214,6 +223,11 @@ export class SSH {
       // SPKI public key
       if (trimmed.startsWith('-----BEGIN PUBLIC KEY-----')) {
         return 'spki';
+      }
+
+      // Assume base64 signature if it looks like base64 and not matched above
+      if (/^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s/g, '')) && trimmed.length > 20) {
+        return 'signature';
       }
     }
 
@@ -264,5 +278,37 @@ export class SSH {
     }
 
     throw new InvalidFormatError('Unable to detect SSH format type');
+  }
+
+  /**
+   * Import signature
+   */
+  private static importSignature(data: string | ByteView): SshSignature {
+    if (typeof data === 'string') {
+      const trimmed = data.trim();
+      if (trimmed.startsWith('-----BEGIN SSH SIGNATURE-----')) {
+        return SshSignature.fromText(data);
+      } else {
+        // Assume base64 legacy signature
+        return SshSignature.fromBase64(trimmed);
+      }
+    } else {
+      return SshSignature.parse(data as Uint8Array);
+    }
+  }
+
+  /**
+   * Sign data with a private key
+   */
+  static async sign(
+    algorithm: string,
+    privateKey: SshPrivateKey,
+    data: Uint8Array,
+    options: {
+      format?: 'legacy' | 'ssh-signature';
+      namespace?: string;
+    } = {},
+  ): Promise<SshSignature> {
+    return SshSignature.sign(algorithm, privateKey, data, options);
   }
 }

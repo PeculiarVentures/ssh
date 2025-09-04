@@ -46,8 +46,8 @@ describe('SSH Unified API', () => {
 
       // Test signing/verification
       const testData = new Uint8Array([1, 2, 3, 4, 5]);
-      const signature = await privateKey.signData(testData);
-      const isValid = await publicKey.verifySignature(testData, signature);
+      const signature = await privateKey.sign(privateKey.keyType, testData);
+      const isValid = await publicKey.verify(privateKey.keyType, signature, testData);
       expect(isValid).toBe(true);
     });
 
@@ -118,7 +118,6 @@ describe('Enhanced SshPrivateKey API', () => {
     expect(typeof key.toWebCrypto).toBe('function');
     expect(typeof key.toPKCS8).toBe('function');
     expect(typeof key.getPublicKey).toBe('function');
-    expect(typeof key.signData).toBe('function');
 
     // Test WebCrypto method
     const cryptoKey = key.toWebCrypto();
@@ -140,7 +139,7 @@ describe('Enhanced SshPublicKey API', () => {
     expect(typeof key.toSSH).toBe('function');
     expect(typeof key.toSPKI).toBe('function');
     expect(typeof key.toWebCrypto).toBe('function');
-    expect(typeof key.verifySignature).toBe('function');
+    expect(typeof key.verify).toBe('function');
 
     // Test SSH export
     const sshString = await key.toSSH();
