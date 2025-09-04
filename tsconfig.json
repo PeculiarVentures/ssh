@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "declaration": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "lib": [
       "ES2022",
@@ -19,14 +17,6 @@
     "types": [
       "vitest/globals",
       "node"
-    ]
-  },
-  "include": [
-    "src/**/*",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+    ],
+  }
 }
