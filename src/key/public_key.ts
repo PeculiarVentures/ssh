@@ -3,22 +3,12 @@ import { getCrypto } from '../crypto';
 import { UnsupportedAlgorithmError, UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
+import { getSshKeyTypeFromCryptoKey } from '../utils';
 import {
   parsePublicKey as parseWirePublicKey,
   serializePublicKey as serializeWirePublicKey,
   type SshPublicKeyBlob,
 } from '../wire/public_key';
-
-/**
- * Auto-detect SSH key type from WebCrypto CryptoKey
- */
-function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
-  const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
-  if (!sshType) {
-    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
-  }
-  return sshType as SshKeyType;
-}
 
 export type SshPublicKeyExportFormat = 'ssh' | 'spki';
 

@@ -8,20 +8,10 @@ import {
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType, SshSignatureAlgo } from '../types';
+import { getSshKeyTypeFromCryptoKey } from '../utils';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 import { SshPublicKey } from './public_key';
-
-/**
- * Auto-detect SSH key type from WebCrypto CryptoKey
- */
-function getSshKeyTypeFromCryptoKey(cryptoKey: CryptoKey): SshKeyType {
-  const sshType = AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey);
-  if (!sshType) {
-    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
-  }
-  return sshType as SshKeyType;
-}
 
 export type SshPrivateKeyExportFormat = 'ssh' | 'pkcs8';
 
