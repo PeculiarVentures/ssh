@@ -1,5 +1,5 @@
 import type { CryptoLike } from './crypto';
-import { UnsupportedAlgorithmError } from './errors.js';
+import { UnsupportedKeyTypeError } from './errors.js';
 import type { ByteView, SshSignatureAlgo } from './types';
 import type { SshPublicKeyBlob } from './wire/public_key';
 import { SshReader } from './wire/reader';
@@ -131,7 +131,7 @@ export class AlgorithmRegistry {
   static get(name: string): AlgorithmBinding {
     const binding = registry.get(name);
     if (!binding) {
-      throw new UnsupportedAlgorithmError(name);
+      throw new UnsupportedKeyTypeError(name, Array.from(registry.keys()));
     }
     return binding;
   }
@@ -142,7 +142,7 @@ export class AlgorithmRegistry {
 
   /**
    * Get SSH key type that supports the given WebCrypto CryptoKey
-   * @throws {UnsupportedAlgorithmError} When no algorithm supports the key
+   * @throws {UnsupportedKeyTypeError} When no algorithm supports the key
    */
   static getSshTypeFromCryptoKey(cryptoKey: CryptoKey): string {
     for (const [sshType, binding] of registry.entries()) {
@@ -150,7 +150,7 @@ export class AlgorithmRegistry {
         return sshType;
       }
     }
-    throw new UnsupportedAlgorithmError(cryptoKey.algorithm.name);
+    throw new UnsupportedKeyTypeError(cryptoKey.algorithm.name, Array.from(registry.keys()));
   }
 
   /**
@@ -167,6 +167,20 @@ export class AlgorithmRegistry {
       'ecdsa-sha2-nistp521-cert-v01@openssh.com': 'ecdsa-sha2-nistp521',
     };
     return mapping[certType];
+  }
+
+  /**
+   * Get supported certificate types
+   * @returns Array of supported certificate types
+   */
+  static getSupportedCertTypes(): string[] {
+    return Object.keys({
+      'ssh-rsa-cert-v01@openssh.com': 'ssh-rsa',
+      'ssh-ed25519-cert-v01@openssh.com': 'ssh-ed25519',
+      'ecdsa-sha2-nistp256-cert-v01@openssh.com': 'ecdsa-sha2-nistp256',
+      'ecdsa-sha2-nistp384-cert-v01@openssh.com': 'ecdsa-sha2-nistp384',
+      'ecdsa-sha2-nistp521-cert-v01@openssh.com': 'ecdsa-sha2-nistp521',
+    });
   }
 }
 

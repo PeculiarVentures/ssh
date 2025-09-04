@@ -1,5 +1,4 @@
 import { getCrypto, type CryptoLike } from '../crypto';
-import { UnsupportedKeyTypeError } from '../errors';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import type { SshKeyType } from '../types';
@@ -179,28 +178,8 @@ export class SshCertificateBuilder {
     let signatureKeyBinding;
     if (signatureAlgorithm) {
       signatureKeyBinding = AlgorithmRegistry.get(signatureAlgorithm);
-      if (!signatureKeyBinding) {
-        throw new UnsupportedKeyTypeError(signatureAlgorithm, [
-          'ssh-ed25519',
-          'ssh-rsa',
-          'rsa-sha2-256',
-          'rsa-sha2-512',
-          'ecdsa-sha2-nistp256',
-          'ecdsa-sha2-nistp384',
-          'ecdsa-sha2-nistp521',
-        ]);
-      }
     } else {
       signatureKeyBinding = AlgorithmRegistry.get(signatureKey.type);
-      if (!signatureKeyBinding) {
-        throw new UnsupportedKeyTypeError(signatureKey.type, [
-          'ssh-ed25519',
-          'ssh-rsa',
-          'ecdsa-sha2-nistp256',
-          'ecdsa-sha2-nistp384',
-          'ecdsa-sha2-nistp521',
-        ]);
-      }
     }
 
     // Get signature key blob directly

@@ -85,7 +85,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
   // Map certificate type to SSH key type
   const mappedKeyType = AlgorithmRegistry.certTypeToKeyType(certType);
   if (!mappedKeyType) {
-    throw new UnsupportedAlgorithmError(certType);
+    throw new UnsupportedAlgorithmError(certType, AlgorithmRegistry.getSupportedCertTypes());
   }
 
   // Get the algorithm binding and parse the public key

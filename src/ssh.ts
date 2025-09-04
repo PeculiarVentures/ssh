@@ -162,7 +162,13 @@ export class SSH {
       }
 
       default:
-        throw new UnsupportedAlgorithmError(alg.name);
+        throw new UnsupportedAlgorithmError(alg.name, [
+          'rsa',
+          'ed25519',
+          'ecdsa-p256',
+          'ecdsa-p384',
+          'ecdsa-p521',
+        ]);
     }
 
     const privateKey = await SshPrivateKey.fromWebCrypto(keyPair.privateKey, sshType);

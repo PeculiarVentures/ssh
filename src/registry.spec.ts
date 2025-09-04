@@ -26,6 +26,6 @@ describe('AlgorithmRegistry', () => {
   });
 
   it('should throw error for unregistered algorithm', () => {
-    expect(() => AlgorithmRegistry.get('unknown')).toThrow('Unsupported algorithm: unknown.');
+    expect(() => AlgorithmRegistry.get('unknown')).toThrow(/Unsupported key type: unknown/);
   });
 });
