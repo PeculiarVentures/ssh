@@ -21,6 +21,18 @@ export class SshWriter {
     }
   }
 
+  /**
+   * Reserve capacity for future writes to avoid reallocations
+   * @param minCapacity Minimum capacity to reserve
+   */
+  reserve(minCapacity: number): void {
+    if (minCapacity > this.buffer.length) {
+      const newBuffer = new Uint8Array(minCapacity);
+      newBuffer.set(this.buffer.subarray(0, this.offset));
+      this.buffer = newBuffer;
+    }
+  }
+
   writeUint8(value: number): void {
     this.ensureCapacity(1);
     this.buffer[this.offset++] = value & 0xff;
