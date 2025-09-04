@@ -41,10 +41,10 @@ export class RsaBinding implements AlgorithmBinding {
     reader.readString();
 
     // Read e (exponent)
-    const e = reader.readMpInt();
+    const e = reader.readMpInt(true);
 
     // Read n (modulus)
-    const n = reader.readMpInt();
+    const n = reader.readMpInt(true);
 
     // Create JWK
     const jwk = {
@@ -79,8 +79,8 @@ export class RsaBinding implements AlgorithmBinding {
 
     const writer = new SshWriter();
     writer.writeString('ssh-rsa');
-    writer.writeMpInt(e);
-    writer.writeMpInt(n);
+    writer.writeMpInt(e, true);
+    writer.writeMpInt(n, true);
 
     return writer.toUint8Array();
   }
@@ -178,12 +178,12 @@ export class RsaBinding implements AlgorithmBinding {
     privateReader.readString();
 
     // Read RSA parameters in SSH private key format order
-    const n = privateReader.readMpInt();
-    const e = privateReader.readMpInt();
-    const d = privateReader.readMpInt();
-    const iqmp = privateReader.readMpInt();
-    const p = privateReader.readMpInt();
-    const q = privateReader.readMpInt();
+    const n = privateReader.readMpInt(true);
+    const e = privateReader.readMpInt(true);
+    const d = privateReader.readMpInt(true);
+    const iqmp = privateReader.readMpInt(true);
+    const p = privateReader.readMpInt(true);
+    const q = privateReader.readMpInt(true);
 
     // Skip comment
     privateReader.readString();
@@ -246,18 +246,23 @@ export class RsaBinding implements AlgorithmBinding {
     // Order: ssh-rsa, n, e, d, iqmp, p, q
     const writer = new SshWriter();
     writer.writeString('ssh-rsa');
-    writer.writeMpInt(n);
-    writer.writeMpInt(e);
-    writer.writeMpInt(d);
-    writer.writeMpInt(qi);
-    writer.writeMpInt(p);
-    writer.writeMpInt(q);
+    writer.writeMpInt(n, true);
+    writer.writeMpInt(e, true);
+    writer.writeMpInt(d, true);
+    writer.writeMpInt(qi, true);
+    writer.writeMpInt(p, true);
+    writer.writeMpInt(q, true);
 
     return writer.toUint8Array();
   }
 
   async sign(params: SignParams): Promise<ArrayBuffer> {
-    const { privateKey, data, crypto, hash: _hash = this.hash } = params;
+    const { privateKey, data, crypto, hash } = params;
+
+    // Validate hash parameter for RSA algorithms
+    if (hash && hash !== this.hash) {
+      throw new InvalidKeyDataError(`Hash ${hash} not supported for this RSA algorithm`);
+    }
 
     if (!privateKey.extractable) {
       throw new InvalidKeyDataError('Private key is not extractable');
@@ -275,7 +280,12 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
-    const { publicKey, signature, data, crypto, hash: _hash = this.hash } = params;
+    const { publicKey, signature, data, crypto, hash } = params;
+
+    // Validate hash parameter for RSA algorithms
+    if (hash && hash !== this.hash) {
+      return false;
+    }
 
     if (!publicKey.extractable) {
       throw new InvalidKeyDataError('Public key is not extractable');
