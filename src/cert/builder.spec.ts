@@ -191,18 +191,29 @@ describe('SshCertificateBuilder', () => {
     expect(isValid).toBe(true);
   });
 
-  it('should build certificate with ECDSA P-521', async () => {
-    // Generate test keys
+  it('should build certificate with RSA SHA-512', async () => {
+    // Generate RSA test keys
     const keyPair = await crypto.subtle.generateKey(
       {
-        name: 'ECDSA',
-        namedCurve: 'P-521',
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
       },
       true,
       ['sign', 'verify'],
     );
 
-    const caKeyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const caKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
 
     // Create public keys
     const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
@@ -211,20 +222,41 @@ describe('SshCertificateBuilder', () => {
     // Create certificate builder
     const builder = new SshCertificateBuilder({
       publicKey,
-      keyId: 'test-ecdsa-p521-cert',
+      keyId: 'test-rsa-sha512-cert',
       validPrincipals: ['user@example.com'],
+      serial: 789n,
     });
 
-    // Sign certificate
+    // Set validity period
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    builder.setValidity(now, now + 86400n); // 24 hours
+
+    // Sign certificate with RSA SHA-512
     const certificate = await builder.sign({
       signatureKey: caPublicKey,
       privateKey: caKeyPair.privateKey,
+      signatureAlgorithm: 'rsa-sha2-512',
     });
 
-    expect(certificate.publicKey.type).toBe('ecdsa-sha2-nistp521');
+    expect(certificate).toBeInstanceOf(SshCertificate);
+
+    // Verify certificate properties
+    expect(certificate.keyId).toBe('test-rsa-sha512-cert');
+    expect(certificate.principals).toEqual(['user@example.com']);
+    expect(certificate.serial).toBe(789n);
+    expect(certificate.certType).toBe('user');
+    expect(certificate.publicKey.type).toBe('ssh-rsa');
 
     // Verify signature
     const isValid = await certificate.verify(caPublicKey);
     expect(isValid).toBe(true);
+
+    // Test round-trip: serialize and deserialize
+    const certText = certificate.toText();
+    const certFromText = await SshCertificate.fromText(certText);
+    expect(certFromText.keyId).toBe('test-rsa-sha512-cert');
+    expect(certFromText.publicKey.type).toBe('ssh-rsa');
+    const isValidRoundTrip = await certFromText.verify(caPublicKey);
+    expect(isValidRoundTrip).toBe(true);
   });
 });

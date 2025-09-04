@@ -110,13 +110,21 @@ export class SshCertificate {
     // Create the data to be signed (everything except the signature)
     const signedData = this.getSignedData();
 
-    // Decode SSH signature to raw format
-    const binding = AlgorithmRegistry.get(verifyKey.type);
-    if (!binding) {
+    // Decode SSH signature to raw format and get the algorithm
+    const tempBinding = AlgorithmRegistry.get(verifyKey.type);
+    if (!tempBinding) {
       throw new UnsupportedKeyTypeError(`Unsupported key type: ${verifyKey.type}`);
     }
 
-    const decodedSignature = binding.decodeSshSignature({ signature: this.data.signature });
+    const decodedSignature = tempBinding.decodeSshSignature({ signature: this.data.signature });
+
+    // Get binding for the actual signature algorithm
+    const binding = AlgorithmRegistry.get(decodedSignature.algo);
+    if (!binding) {
+      throw new UnsupportedKeyTypeError(
+        `Unsupported signature algorithm: ${decodedSignature.algo}`,
+      );
+    }
 
     // Get CryptoKey and verify
     const cryptoKey = await verifyKey.toCryptoKey(crypto);

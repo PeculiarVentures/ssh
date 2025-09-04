@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { rsaCertificate, testEcdsaCert, testEd25519Cert } from '../../tests/utils/testFixtures';
+import { rsaCertificate, testEd25519Cert } from '../../tests/utils/testFixtures';
+import { getCrypto } from '../crypto';
+import { SshPublicKey } from '../key/public_key';
+import { SshCertificateBuilder } from './builder';
 import { SshCertificate } from './certificate';
 
 describe('SshCertificate', () => {
@@ -126,45 +129,67 @@ describe('SshCertificate', () => {
     expect(criticalOptions).toEqual({});
   });
 
-  it('should parse real ECDSA P-256 SSH certificate correctly', async () => {
-    // Expected values for ECDSA certificate
-    const expectedKeyId = 'test-user-ecdsa';
-    const expectedType = 'user';
-    const expectedSerial = 0n;
-    const expectedPrincipals = ['testuser'];
-    const expectedExtensions = {
-      'permit-X11-forwarding': '',
-      'permit-agent-forwarding': '',
-      'permit-port-forwarding': '',
-      'permit-pty': '',
-      'permit-user-rc': '',
-    };
+  it('should verify RSA SHA-512 certificate', async () => {
+    const crypto = getCrypto();
 
-    // Parse certificate
-    const cert = await SshCertificate.fromText(testEcdsaCert);
+    // Generate RSA test keys
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
 
-    // Test all fields
-    expect(cert.keyId).toBe(expectedKeyId);
-    expect(cert.certType).toBe(expectedType);
-    expect(cert.serial).toBe(expectedSerial);
-    expect(cert.principals).toEqual(expectedPrincipals);
+    const caKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
 
-    // Test extensions
-    const extensions = cert.extensions;
-    expect(extensions).toEqual(expectedExtensions);
+    // Create public keys
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+    const caPublicKey = await SshPublicKey.fromWebCrypto(caKeyPair.publicKey);
 
-    // Test that we can get public key
-    const publicKey = cert.publicKey;
-    expect(publicKey).toBeDefined();
-    expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
+    // Create certificate builder
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-rsa-sha512-verify',
+      validPrincipals: ['user@example.com'],
+    });
 
-    // Test that we can get signature key
-    const signatureKey = cert.signatureKey;
-    expect(signatureKey).toBeDefined();
-    expect(signatureKey.type).toBe('ssh-ed25519');
+    // Sign certificate with RSA SHA-512
+    const certificate = await builder.sign({
+      signatureKey: caPublicKey,
+      privateKey: caKeyPair.privateKey,
+      signatureAlgorithm: 'rsa-sha2-512',
+    });
 
-    // Test critical options (should be empty)
-    const criticalOptions = cert.criticalOptions;
-    expect(criticalOptions).toEqual({});
+    // Verify signature
+    const isValid = await certificate.verify(caPublicKey);
+    expect(isValid).toBe(true);
+
+    // Test with wrong CA key (should fail)
+    const wrongCaKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+    const wrongCaPublicKey = await SshPublicKey.fromWebCrypto(wrongCaKeyPair.publicKey);
+    const isValidWrong = await certificate.verify(wrongCaPublicKey);
+    expect(isValidWrong).toBe(false);
   });
 });

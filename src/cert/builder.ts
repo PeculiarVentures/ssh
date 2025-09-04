@@ -22,6 +22,13 @@ export interface SshCertificateSignOptions {
   signatureKey: SshPublicKey;
   privateKey: CryptoKey;
   crypto?: CryptoLike;
+  signatureAlgorithm?:
+    | 'rsa-sha2-256'
+    | 'rsa-sha2-512'
+    | 'ecdsa-sha2-nistp256'
+    | 'ecdsa-sha2-nistp384'
+    | 'ecdsa-sha2-nistp521'
+    | 'ssh-ed25519';
 }
 
 export class SshCertificateBuilder {
@@ -166,18 +173,34 @@ export class SshCertificateBuilder {
    * Sign and create certificate
    */
   async sign(options: SshCertificateSignOptions): Promise<SshCertificate> {
-    const { signatureKey, privateKey, crypto = getCrypto() } = options;
+    const { signatureKey, privateKey, crypto = getCrypto(), signatureAlgorithm } = options;
 
     // Get signature key binding for encoding signature
-    const signatureKeyBinding = AlgorithmRegistry.get(signatureKey.type);
-    if (!signatureKeyBinding) {
-      throw new UnsupportedKeyTypeError(signatureKey.type, [
-        'ssh-ed25519',
-        'ssh-rsa',
-        'ecdsa-sha2-nistp256',
-        'ecdsa-sha2-nistp384',
-        'ecdsa-sha2-nistp521',
-      ]);
+    let signatureKeyBinding;
+    if (signatureAlgorithm) {
+      signatureKeyBinding = AlgorithmRegistry.get(signatureAlgorithm);
+      if (!signatureKeyBinding) {
+        throw new UnsupportedKeyTypeError(signatureAlgorithm, [
+          'ssh-ed25519',
+          'ssh-rsa',
+          'rsa-sha2-256',
+          'rsa-sha2-512',
+          'ecdsa-sha2-nistp256',
+          'ecdsa-sha2-nistp384',
+          'ecdsa-sha2-nistp521',
+        ]);
+      }
+    } else {
+      signatureKeyBinding = AlgorithmRegistry.get(signatureKey.type);
+      if (!signatureKeyBinding) {
+        throw new UnsupportedKeyTypeError(signatureKey.type, [
+          'ssh-ed25519',
+          'ssh-rsa',
+          'ecdsa-sha2-nistp256',
+          'ecdsa-sha2-nistp384',
+          'ecdsa-sha2-nistp521',
+        ]);
+      }
     }
 
     // Get signature key blob directly

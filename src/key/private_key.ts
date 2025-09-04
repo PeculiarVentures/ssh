@@ -340,13 +340,26 @@ export class SshPrivateKey {
    * Sign data and return SSH signature
    */
   async sign(data: ByteView, algo?: string, crypto = getCrypto()): Promise<string> {
-    const binding = AlgorithmRegistry.get(this.type);
-    if (!binding) {
-      throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
+    let binding;
+    let sshAlgo: string;
+
+    if (algo) {
+      // If algorithm is specified, use it to determine the binding
+      binding = AlgorithmRegistry.get(algo);
+      if (!binding) {
+        throw new UnsupportedAlgorithmError(algo);
+      }
+      sshAlgo = algo;
+    } else {
+      // Default to key type
+      binding = AlgorithmRegistry.get(this.type);
+      if (!binding) {
+        throw new UnsupportedKeyTypeError(`Unsupported key type: ${this.type}`);
+      }
+      sshAlgo = this.type;
     }
 
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
-    const sshAlgo = algo || this.type; // Default to key type
     const encoded = binding.encodeSshSignature({ signature, algo: sshAlgo as any });
     return Convert.ToBase64(encoded);
   }
