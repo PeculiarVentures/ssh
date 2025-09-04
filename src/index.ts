@@ -19,5 +19,8 @@ export * from './key';
 // Certificate classes
 export * from './cert';
 
+// Signature classes
+export { SshSignature } from './signature';
+
 // Unified SSH API
 export { SSH, type ImportOptions, type KeyPairResult } from './ssh';

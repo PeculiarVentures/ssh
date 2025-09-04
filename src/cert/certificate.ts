@@ -1,6 +1,7 @@
 import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
+import { SshSignature } from '../signature';
 import {
   parseCertificateData,
   parse as parseWireCertificate,
@@ -109,19 +110,17 @@ export class SshCertificate {
     // Create the data to be signed (everything except the signature)
     const signedData = this.getSignedData();
 
-    // Decode SSH signature to raw format and get the algorithm
-    const tempBinding = AlgorithmRegistry.get(verifyKey.type);
+    // Parse SSH signature
+    const sshSignature = SshSignature.parse(this.data.signature);
 
-    const decodedSignature = tempBinding.decodeSshSignature({ signature: this.data.signature });
-
-    // Get binding for the actual signature algorithm
-    const binding = AlgorithmRegistry.get(decodedSignature.algo);
+    // Get binding for the signature algorithm
+    const binding = AlgorithmRegistry.get(sshSignature.algorithm);
 
     // Get CryptoKey and verify
     const cryptoKey = await verifyKey.toCryptoKey(crypto);
     return binding.verify({
       publicKey: cryptoKey,
-      signature: decodedSignature.signature,
+      signature: sshSignature.signature,
       data: signedData,
       crypto,
     });

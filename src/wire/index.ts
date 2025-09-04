@@ -9,3 +9,7 @@ export type { SshPublicKeyBlob } from './public_key';
 // Certificate wire format
 export { parse as parseCertificate, serialize as serializeCertificate } from './certificate';
 export type { SshCertificateBlob } from './certificate';
+
+// Signature wire format
+export { parseSignature, serializeSignature } from './signature';
+export type { SshSignatureBlob, SshSignatureFormat } from './signature';
