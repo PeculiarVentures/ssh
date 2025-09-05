@@ -144,7 +144,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { spki, crypto } = params;
     return crypto.subtle.importKey(
       'spki',
-      BufferSourceConverter.toArrayBuffer(spki),
+      spki as BufferSource,
       {
         name: 'ECDSA',
         namedCurve: this.namedCurve,
@@ -164,7 +164,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { pkcs8, crypto } = params;
     return crypto.subtle.importKey(
       'pkcs8',
-      BufferSourceConverter.toArrayBuffer(pkcs8),
+      pkcs8 as BufferSource,
       {
         name: 'ECDSA',
         namedCurve: this.namedCurve,
@@ -325,7 +325,7 @@ export class EcdsaBinding implements AlgorithmBinding {
         hash: expectedHash,
       },
       privateKey,
-      BufferSourceConverter.toArrayBuffer(data),
+      data as BufferSource,
     );
     return BufferSourceConverter.toUint8Array(signature);
   }
@@ -349,8 +349,8 @@ export class EcdsaBinding implements AlgorithmBinding {
         hash: expectedHash,
       },
       publicKey,
-      BufferSourceConverter.toArrayBuffer(signature),
-      BufferSourceConverter.toArrayBuffer(data),
+      signature as BufferSource,
+      data as BufferSource,
     );
   }
 

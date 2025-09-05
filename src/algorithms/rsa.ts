@@ -89,7 +89,7 @@ export class RsaBinding implements AlgorithmBinding {
     const { spki, crypto } = params;
     return crypto.subtle.importKey(
       'spki',
-      BufferSourceConverter.toArrayBuffer(spki),
+      spki as BufferSource,
       {
         name: 'RSASSA-PKCS1-v1_5',
         hash: this.hash,
@@ -109,7 +109,7 @@ export class RsaBinding implements AlgorithmBinding {
     const { pkcs8, crypto } = params;
     return crypto.subtle.importKey(
       'pkcs8',
-      BufferSourceConverter.toArrayBuffer(pkcs8),
+      pkcs8 as BufferSource,
       {
         name: 'RSASSA-PKCS1-v1_5',
         hash: this.hash,
@@ -274,11 +274,7 @@ export class RsaBinding implements AlgorithmBinding {
     const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
     const keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
 
-    const signature = await crypto.subtle.sign(
-      'RSASSA-PKCS1-v1_5',
-      keyToUse,
-      BufferSourceConverter.toArrayBuffer(data),
-    );
+    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyToUse, data as BufferSource);
     return BufferSourceConverter.toUint8Array(signature);
   }
 
@@ -301,8 +297,8 @@ export class RsaBinding implements AlgorithmBinding {
     return crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',
       keyToUse,
-      BufferSourceConverter.toArrayBuffer(signature),
-      BufferSourceConverter.toArrayBuffer(data),
+      signature as BufferSource,
+      data as BufferSource,
     );
   }
 
