@@ -1,5 +1,8 @@
 # @peculiar/ssh
 
+[![CI](https://github.com/PeculiarVentures/ssh/actions/workflows/ci.yml/badge.svg)](https://github.com/PeculiarVentures/ssh/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/PeculiarVentures/ssh/badge.svg?branch=main)](https://coveralls.io/github/PeculiarVentures/ssh?branch=main)
+
 A TypeScript library for working with SSH keys and certificates in both Node.js and browsers, built on top of WebCrypto. Provides parsing, serialization, conversion (SPKI/PKCS8 ↔ SSH), and certificate signing/verification with an extensible algorithm registry.
 
 ## Features
