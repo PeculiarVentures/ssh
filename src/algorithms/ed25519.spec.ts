@@ -13,10 +13,6 @@ describe('Ed25519 Algorithm', () => {
   });
 
   it('should import/export Ed25519 public key from SSH format', async () => {
-    if (!ed25519Binding) {
-      throw new Error('Ed25519 binding not found');
-    }
-
     // Generate test key
     const keyPair = await crypto.subtle.generateKey(
       {
@@ -47,10 +43,6 @@ describe('Ed25519 Algorithm', () => {
   });
 
   it('should import/export Ed25519 private key from PKCS#8 format', async () => {
-    if (!ed25519Binding) {
-      throw new Error('Ed25519 binding not found');
-    }
-
     // Generate test key
     const keyPair = await crypto.subtle.generateKey(
       {
@@ -81,10 +73,6 @@ describe('Ed25519 Algorithm', () => {
   });
 
   it('should sign and verify data', async () => {
-    if (!ed25519Binding) {
-      throw new Error('Ed25519 binding not found');
-    }
-
     // Generate test key
     const keyPair = await crypto.subtle.generateKey(
       {
@@ -116,10 +104,6 @@ describe('Ed25519 Algorithm', () => {
   });
 
   it('should encode/decode SSH signature', async () => {
-    if (!ed25519Binding) {
-      throw new Error('Ed25519 binding not found');
-    }
-
     // Generate test key
     const keyPair = await crypto.subtle.generateKey(
       {
@@ -155,10 +139,6 @@ describe('Ed25519 Algorithm', () => {
   });
 
   it('should import/export Ed25519 public key from SPKI format', async () => {
-    if (!ed25519Binding) {
-      throw new Error('Ed25519 binding not found');
-    }
-
     // Generate test key
     const keyPair = await crypto.subtle.generateKey(
       {
@@ -203,12 +183,7 @@ describe('Ed25519 Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key data
 
     const reader = new SshReader(writer.toUint8Array());
-    const parseMethod = ed25519Binding.parsePublicKey;
-    expect(parseMethod).toBeDefined();
-    if (!parseMethod) {
-      throw new Error('parseCertificatePublicKey method not found');
-    }
-    const publicKey = parseMethod(reader);
+    const publicKey = ed25519Binding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ssh-ed25519');
     expect(publicKey.keyData).toBeDefined();

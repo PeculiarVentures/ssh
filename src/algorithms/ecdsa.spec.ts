@@ -22,9 +22,6 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parsePublicKey) {
-      throw new Error('parseCertificatePublicKey method not found');
-    }
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
@@ -55,9 +52,6 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parsePublicKey) {
-      throw new Error('parseCertificatePublicKey method not found');
-    }
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp384');
@@ -88,9 +82,6 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parsePublicKey) {
-      throw new Error('parseCertificatePublicKey method not found');
-    }
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp521');

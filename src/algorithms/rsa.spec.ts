@@ -22,12 +22,7 @@ describe('RSA Algorithm', () => {
     writer.writeBytes(new Uint8Array([0, 1, 0, 1])); // n mock
 
     const reader = new SshReader(writer.toUint8Array());
-    const parseMethod = rsaBinding.parsePublicKey;
-    expect(parseMethod).toBeDefined();
-    if (!parseMethod) {
-      throw new Error('parseCertificatePublicKey method not found');
-    }
-    const publicKey = parseMethod(reader);
+    const publicKey = rsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ssh-rsa');
     expect(publicKey.keyData).toBeDefined();
