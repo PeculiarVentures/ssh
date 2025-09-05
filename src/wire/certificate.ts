@@ -249,7 +249,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   writer.writeString(certType);
 
   // Write nonce
-  const certNonce = nonce || new Uint8Array(32); // Use zero-filled array if no nonce provided
+  const certNonce = nonce || crypto.getRandomValues(new Uint8Array(32));
   writer.writeUint32(certNonce.length);
   writer.writeBytes(certNonce);
 

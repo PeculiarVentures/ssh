@@ -1,4 +1,4 @@
-import { getCrypto, type CryptoLike } from '../crypto';
+import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import type { SshKeyType } from '../types';
@@ -20,7 +20,7 @@ export interface SshCertificateInit {
 export interface SshCertificateSignOptions {
   signatureKey: SshPublicKey;
   privateKey: CryptoKey;
-  crypto?: CryptoLike;
+  crypto?: Crypto;
   signatureAlgorithm?:
     | 'rsa-sha2-256'
     | 'rsa-sha2-512'
@@ -141,13 +141,7 @@ export class SshCertificateBuilder {
   previewBlob(): Uint8Array {
     // Generate nonce if not already generated
     if (!this.nonce) {
-      // Use the same nonce as in the original certificate for testing
-      const originalNonce = new Uint8Array([
-        0x6e, 0xaa, 0x01, 0x38, 0x04, 0xc0, 0x2e, 0xa9, 0x36, 0x39, 0x76, 0xa0, 0x48, 0x31, 0xfd,
-        0x8e, 0xbe, 0xca, 0x00, 0x5e, 0x29, 0x5d, 0x68, 0x31, 0x49, 0x5e, 0x99, 0x8b, 0xcb, 0xe3,
-        0xd1, 0xe0,
-      ]);
-      this.nonce = originalNonce;
+      this.nonce = crypto.getRandomValues(new Uint8Array(32));
     }
 
     // Get the public key blob directly
@@ -187,13 +181,7 @@ export class SshCertificateBuilder {
 
     // Generate nonce if not already generated
     if (!this.nonce) {
-      // Use the same nonce as in the original certificate for testing
-      const originalNonce = new Uint8Array([
-        0x6e, 0xaa, 0x01, 0x38, 0x04, 0xc0, 0x2e, 0xa9, 0x36, 0x39, 0x76, 0xa0, 0x48, 0x31, 0xfd,
-        0x8e, 0xbe, 0xca, 0x00, 0x5e, 0x29, 0x5d, 0x68, 0x31, 0x49, 0x5e, 0x99, 0x8b, 0xcb, 0xe3,
-        0xd1, 0xe0,
-      ]);
-      this.nonce = originalNonce;
+      this.nonce = crypto.getRandomValues(new Uint8Array(32));
     }
 
     // Create certificate data WITH signature key for signing (according to SSH spec)

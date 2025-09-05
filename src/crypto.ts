@@ -1,13 +1,9 @@
-export interface CryptoLike {
-  subtle: SubtleCrypto;
-}
+let globalCrypto = globalThis.crypto;
 
-let globalCrypto: CryptoLike = globalThis.crypto;
-
-export function setCrypto(crypto: CryptoLike): void {
+export function setCrypto(crypto: Crypto): void {
   globalCrypto = crypto;
 }
 
-export function getCrypto(): CryptoLike {
+export function getCrypto(): Crypto {
   return globalCrypto;
 }

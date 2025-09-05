@@ -1,5 +1,5 @@
 import { Convert } from 'pvtsutils';
-import { getCrypto, type CryptoLike } from '../crypto';
+import { getCrypto } from '../crypto';
 import {
   EncryptedKeyNotSupportedError,
   InvalidPrivateKeyFormatError,
@@ -34,7 +34,7 @@ export class SshPrivateKey extends SSHObject {
   /**
    * Get cached JWK
    */
-  private async getJwk(crypto: CryptoLike): Promise<any> {
+  private async getJwk(crypto: Crypto): Promise<any> {
     if (!this.cachedJwk) {
       this.cachedJwk = await crypto.subtle.exportKey('jwk', this.cryptoKey);
     }

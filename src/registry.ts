@@ -1,4 +1,3 @@
-import type { CryptoLike } from './crypto';
 import { UnsupportedKeyTypeError } from './errors.js';
 import type { ByteView, SshSignatureAlgo } from './types';
 import type { SshPublicKeyBlob } from './wire/public_key';
@@ -7,50 +6,50 @@ import { SshWriter } from './wire/writer';
 
 export interface ImportPublicFromSshParams {
   blob: Uint8Array;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ExportPublicToSshParams {
   publicKey: CryptoKey;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ImportPublicSpkiParams {
   spki: ByteView;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ExportPublicSpkiParams {
   publicKey: CryptoKey;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ImportPrivatePkcs8Params {
   pkcs8: ByteView;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ExportPrivatePkcs8Params {
   privateKey: CryptoKey;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface ExportPrivateToSshParams {
   privateKey: CryptoKey;
   publicKey?: CryptoKey;
-  crypto: CryptoLike;
+  crypto: Crypto;
   jwk?: JsonWebKey;
 }
 
 export interface ImportPrivateFromSshParams {
   sshKey: string;
-  crypto: CryptoLike;
+  crypto: Crypto;
 }
 
 export interface SignParams {
   privateKey: CryptoKey;
   data: ByteView;
-  crypto: CryptoLike;
+  crypto: Crypto;
   hash?: 'SHA-256' | 'SHA-512';
 }
 
@@ -58,7 +57,7 @@ export interface VerifyParams {
   publicKey: CryptoKey;
   signature: ByteView;
   data: ByteView;
-  crypto: CryptoLike;
+  crypto: Crypto;
   hash?: 'SHA-256' | 'SHA-512';
 }
 
