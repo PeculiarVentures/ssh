@@ -96,6 +96,10 @@ For older browsers, you may need to provide a WebCrypto polyfill.
 
 **Note:** Ed25519 support was added to major browsers relatively recently. For broader compatibility, consider using ECDSA or RSA algorithms.
 
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for development setup, coding standards, and contribution guidelines.
+
 ## License
 
 MIT License - see LICENSE file for details.
