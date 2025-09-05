@@ -1,3 +1,4 @@
+import { InvalidFormatError } from '../errors';
 import { SshReader } from './reader';
 import { SshWriter } from './writer';
 
@@ -37,7 +38,7 @@ function parseSshSignatureFormat(reader: SshReader): SshSignatureBlob {
   const magicBytes = reader.readBytes(6);
   const magic = new TextDecoder().decode(magicBytes);
   if (magic !== 'SSHSIG') {
-    throw new Error('Invalid SSH SIGNATURE magic');
+    throw new InvalidFormatError(magic, 'SSHSIG');
   }
 
   const version = reader.readUint32();

@@ -342,11 +342,11 @@ export class SSH {
       publicKey = object.publicKey;
     } else if (object instanceof SshSignature) {
       if (!object.publicKey) {
-        throw new Error('Signature does not contain a public key');
+        throw new SshError('Signature does not contain a public key');
       }
       publicKey = object.publicKey;
     } else {
-      throw new Error('Unsupported object type for thumbprint');
+      throw new SshError('Unsupported object type for thumbprint');
     }
 
     const hash = await publicKey.thumbprint(algorithm, crypto);
@@ -363,7 +363,7 @@ export class SSH {
         return `${prefix}:${Convert.ToBase64(hash)}`;
       }
       default:
-        throw new Error(`Unsupported format: ${format}`);
+        throw new InvalidFormatError(format);
     }
   }
 }
