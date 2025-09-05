@@ -146,8 +146,8 @@ describe('SshCertificateBuilder', () => {
     expect(isValid).toBe(true);
 
     // Test round-trip: serialize and deserialize
-    const certText = certificate.toText();
-    const certFromText = await SshCertificate.fromText(certText);
+    const certText = await certificate.toSSH();
+    const certFromText = await SshCertificate.fromSSH(certText);
     expect(certFromText.keyId).toBe('test-ecdsa-cert');
     expect(certFromText.publicKey.keyType).toBe('ecdsa-sha2-nistp256');
     const isValidRoundTrip = await certFromText.verify(caPublicKey);
@@ -252,8 +252,8 @@ describe('SshCertificateBuilder', () => {
     expect(isValid).toBe(true);
 
     // Test round-trip: serialize and deserialize
-    const certText = certificate.toText();
-    const certFromText = await SshCertificate.fromText(certText);
+    const certText = await certificate.toSSH();
+    const certFromText = await SshCertificate.fromSSH(certText);
     expect(certFromText.keyId).toBe('test-rsa-sha512-cert');
     expect(certFromText.publicKey.keyType).toBe('ssh-rsa');
     const isValidRoundTrip = await certFromText.verify(caPublicKey);

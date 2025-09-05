@@ -34,7 +34,7 @@ export class SshPrivateKey extends SshObject {
   /**
    * Get cached JWK
    */
-  private async getJwk(crypto: Crypto): Promise<any> {
+  private async toJWK(crypto: Crypto): Promise<JsonWebKey> {
     if (!this.cachedJwk) {
       this.cachedJwk = await crypto.subtle.exportKey('jwk', this.cryptoKey);
     }
@@ -43,8 +43,11 @@ export class SshPrivateKey extends SshObject {
 
   /**
    * Import from SSH private key string
+   * @param sshKey OpenSSH private key string
+   * @param crypto Crypto provider
+   * @returns SshPrivateKey instance
    */
-  static async importPrivateFromSsh(sshKey: string): Promise<SshPrivateKey> {
+  static async fromSSH(sshKey: string, crypto = getCrypto()): Promise<SshPrivateKey> {
     // First, determine the key type from the SSH private key
     const keyType = await SshPrivateKey.detectSshKeyType(sshKey);
 
@@ -52,13 +55,10 @@ export class SshPrivateKey extends SshObject {
     const binding = AlgorithmRegistry.get(keyType);
 
     // Import using the specific binding
-    const cryptoKey = await binding.importPrivateFromSsh({ sshKey, crypto: getCrypto() });
+    const cryptoKey = await binding.importPrivateFromSsh({ sshKey, crypto });
     return new SshPrivateKey(cryptoKey, keyType as SshKeyType);
   }
 
-  /**
-   * Detect SSH key type from OpenSSH private key format
-   */
   /**
    * Detects the SSH key type from an OpenSSH private key
    * @param sshKey OpenSSH private key string
@@ -123,7 +123,7 @@ export class SshPrivateKey extends SshObject {
   /**
    * Import from PKCS#8 format
    */
-  static async importPrivatePkcs8(
+  static async fromPKCS8(
     pkcs8: ByteView,
     type: SshKeyType,
     crypto = getCrypto(),
@@ -158,11 +158,11 @@ export class SshPrivateKey extends SshObject {
       }
 
       // Export public key blob for the outer structure using cached public key
-      const publicKey = await this.exportPublicKey(crypto);
+      const publicKey = await this.getPublicKey(crypto);
       const publicBlob = publicKey.getBlob().keyData;
 
       // Get cached JWK for optimization
-      const jwk = await this.getJwk(crypto);
+      const jwk = await this.toJWK(crypto);
 
       // Export algorithm-specific private data
       const privateData = await binding.exportPrivateToSsh({
@@ -263,33 +263,9 @@ export class SshPrivateKey extends SshObject {
   }
 
   /**
-   * Export to PKCS#8
-   */
-  async exportPrivatePkcs8(): Promise<Uint8Array> {
-    return this.toPKCS8();
-  }
-
-  /**
    * Get public key (convenience method)
    */
   async getPublicKey(crypto = getCrypto()): Promise<SshPublicKey> {
-    return this.exportPublicKey(crypto);
-  }
-
-  /**
-   * Sign data and return raw signature
-   */
-  async sign(algo: string, data: ByteView, crypto = getCrypto()): Promise<Uint8Array> {
-    const binding = AlgorithmRegistry.get(algo);
-
-    const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
-    return new Uint8Array(signature);
-  }
-
-  /**
-   * Get public key
-   */
-  async exportPublicKey(crypto = getCrypto()): Promise<SshPublicKey> {
     if (this.publicKey) {
       return this.publicKey;
     }
@@ -304,5 +280,15 @@ export class SshPrivateKey extends SshObject {
 
     this.publicKey = new SshPublicKey(blob);
     return this.publicKey;
+  }
+
+  /**
+   * Sign data and return raw signature
+   */
+  async sign(algo: string, data: ByteView, crypto = getCrypto()): Promise<Uint8Array> {
+    const binding = AlgorithmRegistry.get(algo);
+
+    const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });
+    return new Uint8Array(signature);
   }
 }

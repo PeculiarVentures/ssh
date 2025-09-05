@@ -35,7 +35,7 @@ export class SshPublicKey extends SshObject {
     return this.cachedCryptoKey;
   }
 
-  static async importPublicFromSsh(sshKey: string, crypto = getCrypto()): Promise<SshPublicKey> {
+  static async fromSSH(sshKey: string, crypto = getCrypto()): Promise<SshPublicKey> {
     const blob = parseWirePublicKey(sshKey);
     const binding = AlgorithmRegistry.get(blob.type);
 
@@ -44,7 +44,7 @@ export class SshPublicKey extends SshObject {
     return new SshPublicKey(blob);
   }
 
-  static async importPublicSpki(
+  static async fromSPKI(
     spki: ByteView,
     type: SshKeyType,
     crypto = getCrypto(),
@@ -118,14 +118,7 @@ export class SshPublicKey extends SshObject {
    * Get WebCrypto key (convenience method)
    */
   async toWebCrypto(crypto = getCrypto()): Promise<CryptoKey> {
-    return this.toCryptoKey(crypto);
-  }
-
-  /**
-   * Export to SPKI
-   */
-  async exportPublicSpki(_crypto = getCrypto()): Promise<Uint8Array> {
-    return this.toSPKI();
+    return this.getCryptoKey(crypto);
   }
 
   /**
@@ -141,20 +134,13 @@ export class SshPublicKey extends SshObject {
     const binding = AlgorithmRegistry.get(algorithm);
 
     // Get CryptoKey and verify
-    const cryptoKey = await this.toCryptoKey(crypto);
+    const cryptoKey = await this.toWebCrypto(crypto);
     return binding.verify({
       publicKey: cryptoKey,
       signature,
       data,
       crypto,
     });
-  }
-
-  /**
-   * Convert to WebCrypto CryptoKey for cryptographic operations
-   */
-  async toCryptoKey(crypto = getCrypto()): Promise<CryptoKey> {
-    return this.getCryptoKey(crypto);
   }
 
   /**

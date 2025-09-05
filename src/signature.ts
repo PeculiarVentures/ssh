@@ -266,7 +266,7 @@ export class SshSignature extends SshObject {
       const hashAlgorithm = algorithm === 'rsa-sha2-256' ? 'sha256' : 'sha512';
 
       // Get the public key for SSH SIGNATURE format
-      const publicKey = await privateKey.exportPublicKey();
+      const publicKey = await privateKey.getPublicKey();
 
       // For SSH SIGNATURE format, create the data to be signed according to spec
       const crypto = getCrypto();

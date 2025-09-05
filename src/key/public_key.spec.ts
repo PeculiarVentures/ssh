@@ -34,13 +34,13 @@ describe('SshPublicKey', () => {
     const sshString = (await originalPublicKey.export('ssh')) as string;
 
     // Import back from SSH string
-    const importedPublicKey = await SshPublicKey.importPublicFromSsh(sshString);
+    const importedPublicKey = await SshPublicKey.fromSSH(sshString);
 
     expect(importedPublicKey.keyType).toBe('ssh-ed25519');
 
     // Export both keys as SPKI for comparison
-    const originalSpki = await originalPublicKey.exportPublicSpki();
-    const importedSpki = await importedPublicKey.exportPublicSpki();
+    const originalSpki = await originalPublicKey.toSPKI();
+    const importedSpki = await importedPublicKey.toSPKI();
 
     // Compare SPKI data
     expect(new Uint8Array(originalSpki)).toEqual(new Uint8Array(importedSpki));
@@ -50,7 +50,7 @@ describe('SshPublicKey', () => {
     const signature = await crypto.subtle.sign('Ed25519', keyPair.privateKey, testData);
 
     // Convert imported SSH key to CryptoKey and verify
-    const importedCryptoKey = await importedPublicKey.toCryptoKey();
+    const importedCryptoKey = await importedPublicKey.toWebCrypto();
     const isValid = await crypto.subtle.verify('Ed25519', importedCryptoKey, signature, testData);
     expect(isValid).toBe(true);
   });

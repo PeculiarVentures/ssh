@@ -32,66 +32,57 @@ describe('SshPrivateKey', () => {
   });
 
   it('should import RSA private key from PKCS#8', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(rsaPrivateKeyPkcs8, 'ssh-rsa');
+    const key = await SshPrivateKey.fromPKCS8(rsaPrivateKeyPkcs8, 'ssh-rsa');
     expect(key.keyType).toBe('ssh-rsa');
   });
 
   it('should import Ed25519 private key from PKCS#8', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(ed25519PrivateKeyPkcs8, 'ssh-ed25519');
+    const key = await SshPrivateKey.fromPKCS8(ed25519PrivateKeyPkcs8, 'ssh-ed25519');
     expect(key.keyType).toBe('ssh-ed25519');
   });
 
   it('should import ECDSA P-256 private key from PKCS#8', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP256PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp256',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP256PrivateKeyPkcs8, 'ecdsa-sha2-nistp256');
     expect(key.keyType).toBe('ecdsa-sha2-nistp256');
   });
 
   it('should import ECDSA P-384 private key from PKCS#8', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP384PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp384',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP384PrivateKeyPkcs8, 'ecdsa-sha2-nistp384');
     expect(key.keyType).toBe('ecdsa-sha2-nistp384');
   });
 
   it('should import ECDSA P-521 private key from PKCS#8', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP521PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp521',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP521PrivateKeyPkcs8, 'ecdsa-sha2-nistp521');
     expect(key.keyType).toBe('ecdsa-sha2-nistp521');
   });
 
   it('should import RSA private key from SSH format', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(rsaPrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(rsaPrivateKeySsh);
     expect(key.keyType).toBe('ssh-rsa');
   });
 
   it('should import Ed25519 private key from SSH format', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ed25519PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ed25519PrivateKeySsh);
     expect(key.keyType).toBe('ssh-ed25519');
   });
 
   it('should import ECDSA P-256 private key from SSH format', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP256PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP256PrivateKeySsh);
     expect(key.keyType).toBe('ecdsa-sha2-nistp256');
   });
 
   it('should import ECDSA P-384 private key from SSH format', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP384PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP384PrivateKeySsh);
     expect(key.keyType).toBe('ecdsa-sha2-nistp384');
   });
 
   it('should import ECDSA P-521 private key from SSH format', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP521PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP521PrivateKeySsh);
     expect(key.keyType).toBe('ecdsa-sha2-nistp521');
   });
 
   it('should have convenience methods', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ed25519PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ed25519PrivateKeySsh);
 
     // Test convenience export methods
     expect(typeof key.toWebCrypto).toBe('function');
@@ -120,7 +111,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should export and re-import Ed25519 private key in SSH format (round-trip)', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ed25519PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ed25519PrivateKeySsh);
 
     // Export to SSH format
     const exportedSsh = await key.export('ssh');
@@ -129,7 +120,7 @@ describe('SshPrivateKey', () => {
     expect(exportedSsh).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Re-import and verify public keys match
-    const reimported = await SshPrivateKey.importPrivateFromSsh(exportedSsh as string);
+    const reimported = await SshPrivateKey.fromSSH(exportedSsh as string);
     expect(reimported.keyType).toBe('ssh-ed25519');
 
     const originalPub = await key.getPublicKey();
@@ -140,7 +131,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should export and re-import RSA private key in SSH format (round-trip)', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(rsaPrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(rsaPrivateKeySsh);
 
     // Export to SSH format
     const exportedSsh = await key.export('ssh');
@@ -149,7 +140,7 @@ describe('SshPrivateKey', () => {
     expect(exportedSsh).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Re-import and verify public keys match
-    const reimported = await SshPrivateKey.importPrivateFromSsh(exportedSsh as string);
+    const reimported = await SshPrivateKey.fromSSH(exportedSsh as string);
     expect(reimported.keyType).toBe('ssh-rsa');
 
     const originalPub = await key.getPublicKey();
@@ -160,11 +151,11 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for Ed25519', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(ed25519PrivateKeyPkcs8, 'ssh-ed25519');
+    const key = await SshPrivateKey.fromPKCS8(ed25519PrivateKeyPkcs8, 'ssh-ed25519');
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
-    const reimported = await SshPrivateKey.importPrivateFromSsh(sshExported as string);
+    const reimported = await SshPrivateKey.fromSSH(sshExported as string);
     await reimported.export('pkcs8'); // Just verify it doesn't throw
 
     // Import both PKCS#8 versions and compare public keys
@@ -176,11 +167,11 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for RSA', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(rsaPrivateKeyPkcs8, 'ssh-rsa');
+    const key = await SshPrivateKey.fromPKCS8(rsaPrivateKeyPkcs8, 'ssh-rsa');
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
-    const reimported = await SshPrivateKey.importPrivateFromSsh(sshExported as string);
+    const reimported = await SshPrivateKey.fromSSH(sshExported as string);
     await reimported.export('pkcs8'); // Just verify it doesn't throw
 
     // Import both PKCS#8 versions and compare public keys
@@ -192,7 +183,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should use toSSH() convenience method', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ed25519PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ed25519PrivateKeySsh);
 
     const sshString = await key.toSSH();
     expect(typeof sshString).toBe('string');
@@ -200,10 +191,8 @@ describe('SshPrivateKey', () => {
     expect(sshString).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Verify both methods produce valid SSH keys (can be re-imported)
-    const fromToSSH = await SshPrivateKey.importPrivateFromSsh(sshString);
-    const fromExport = await SshPrivateKey.importPrivateFromSsh(
-      (await key.export('ssh')) as string,
-    );
+    const fromToSSH = await SshPrivateKey.fromSSH(sshString);
+    const fromExport = await SshPrivateKey.fromSSH((await key.export('ssh')) as string);
 
     expect(fromToSSH.keyType).toBe(fromExport.keyType);
 
@@ -213,7 +202,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should export and re-import ECDSA P-256 private key in SSH format (round-trip)', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP256PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP256PrivateKeySsh);
 
     // Export to SSH format
     const exportedSsh = await key.export('ssh');
@@ -222,7 +211,7 @@ describe('SshPrivateKey', () => {
     expect(exportedSsh).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Re-import and verify public keys match
-    const reimported = await SshPrivateKey.importPrivateFromSsh(exportedSsh as string);
+    const reimported = await SshPrivateKey.fromSSH(exportedSsh as string);
     expect(reimported.keyType).toBe('ecdsa-sha2-nistp256');
 
     const originalPub = await key.getPublicKey();
@@ -233,7 +222,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should export and re-import ECDSA P-384 private key in SSH format (round-trip)', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP384PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP384PrivateKeySsh);
 
     // Export to SSH format
     const exportedSsh = await key.export('ssh');
@@ -242,7 +231,7 @@ describe('SshPrivateKey', () => {
     expect(exportedSsh).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Re-import and verify public keys match
-    const reimported = await SshPrivateKey.importPrivateFromSsh(exportedSsh as string);
+    const reimported = await SshPrivateKey.fromSSH(exportedSsh as string);
     expect(reimported.keyType).toBe('ecdsa-sha2-nistp384');
 
     const originalPub = await key.getPublicKey();
@@ -253,7 +242,7 @@ describe('SshPrivateKey', () => {
   });
 
   it('should export and re-import ECDSA P-521 private key in SSH format (round-trip)', async () => {
-    const key = await SshPrivateKey.importPrivateFromSsh(ecdsaP521PrivateKeySsh);
+    const key = await SshPrivateKey.fromSSH(ecdsaP521PrivateKeySsh);
 
     // Export to SSH format
     const exportedSsh = await key.export('ssh');
@@ -262,7 +251,7 @@ describe('SshPrivateKey', () => {
     expect(exportedSsh).toContain('-----END OPENSSH PRIVATE KEY-----');
 
     // Re-import and verify public keys match
-    const reimported = await SshPrivateKey.importPrivateFromSsh(exportedSsh as string);
+    const reimported = await SshPrivateKey.fromSSH(exportedSsh as string);
     expect(reimported.keyType).toBe('ecdsa-sha2-nistp521');
 
     const originalPub = await key.getPublicKey();
@@ -273,14 +262,11 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-256', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP256PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp256',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP256PrivateKeyPkcs8, 'ecdsa-sha2-nistp256');
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
-    const reimported = await SshPrivateKey.importPrivateFromSsh(sshExported as string);
+    const reimported = await SshPrivateKey.fromSSH(sshExported as string);
     await reimported.export('pkcs8'); // Just verify it doesn't throw
 
     // Import both PKCS#8 versions and compare public keys
@@ -292,14 +278,11 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-384', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP384PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp384',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP384PrivateKeyPkcs8, 'ecdsa-sha2-nistp384');
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
-    const reimported = await SshPrivateKey.importPrivateFromSsh(sshExported as string);
+    const reimported = await SshPrivateKey.fromSSH(sshExported as string);
     await reimported.export('pkcs8'); // Just verify it doesn't throw
 
     // Import both PKCS#8 versions and compare public keys
@@ -311,14 +294,11 @@ describe('SshPrivateKey', () => {
   });
 
   it('should round-trip PKCS#8 to SSH and back for ECDSA P-521', async () => {
-    const key = await SshPrivateKey.importPrivatePkcs8(
-      ecdsaP521PrivateKeyPkcs8,
-      'ecdsa-sha2-nistp521',
-    );
+    const key = await SshPrivateKey.fromPKCS8(ecdsaP521PrivateKeyPkcs8, 'ecdsa-sha2-nistp521');
 
     // Export to SSH, then back to PKCS#8
     const sshExported = await key.export('ssh');
-    const reimported = await SshPrivateKey.importPrivateFromSsh(sshExported as string);
+    const reimported = await SshPrivateKey.fromSSH(sshExported as string);
     await reimported.export('pkcs8'); // Just verify it doesn't throw
 
     // Import both PKCS#8 versions and compare public keys

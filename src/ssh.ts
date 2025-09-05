@@ -71,13 +71,13 @@ export class SSH {
         if (!type) {
           throw new UnsupportedKeyTypeError('Key type must be specified for PKCS#8 import');
         }
-        return SshPrivateKey.importPrivatePkcs8(data as ByteView, type, crypto);
+        return SshPrivateKey.fromPKCS8(data as ByteView, type, crypto);
 
       case 'spki':
         if (!type) {
           throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
         }
-        return SshPublicKey.importPublicSpki(data as ByteView, type, crypto);
+        return SshPublicKey.fromSPKI(data as ByteView, type, crypto);
 
       case 'signature':
         return SSH.importSignature(data);
@@ -270,17 +270,17 @@ export class SSH {
 
     // SSH certificate
     if (trimmed.includes('-cert-v01@openssh.com')) {
-      return SshCertificate.fromText(data);
+      return SshCertificate.fromSSH(data);
     }
 
     // SSH private key
     if (trimmed.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----')) {
-      return SshPrivateKey.importPrivateFromSsh(data);
+      return SshPrivateKey.fromSSH(data);
     }
 
     // SSH public key
     if (/^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp\d+)\s+/.test(trimmed)) {
-      return SshPublicKey.importPublicFromSsh(data, crypto);
+      return SshPublicKey.fromSSH(data, crypto);
     }
 
     throw new InvalidFormatError('Unable to detect SSH format type');

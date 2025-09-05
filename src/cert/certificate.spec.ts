@@ -8,12 +8,12 @@ import { SshCertificate } from './certificate';
 describe('SshCertificate', () => {
   it('should handle invalid certificate format gracefully', async () => {
     // Test with invalid certificate text
-    await expect(SshCertificate.fromText('invalid')).rejects.toThrow();
+    await expect(SshCertificate.fromSSH('invalid')).rejects.toThrow();
   });
 
   it('should create certificate from valid blob', async () => {
     // Use a real certificate for testing
-    const cert = await SshCertificate.fromText(rsaCertificate);
+    const cert = await SshCertificate.fromSSH(rsaCertificate);
     const blob = cert.toBlob();
 
     // Create from blob and verify it's the same
@@ -22,7 +22,7 @@ describe('SshCertificate', () => {
   });
 
   it('should expose certificate properties', async () => {
-    const cert = await SshCertificate.fromText(rsaCertificate);
+    const cert = await SshCertificate.fromSSH(rsaCertificate);
 
     // Test that properties are accessible
     expect(cert.keyId).toBeDefined();
@@ -55,7 +55,7 @@ describe('SshCertificate', () => {
     };
 
     // Parse certificate
-    const cert = await SshCertificate.fromText(rsaCertificate);
+    const cert = await SshCertificate.fromSSH(rsaCertificate);
 
     // Test all fields
     expect(cert.keyId).toBe(expectedKeyId);
@@ -102,7 +102,7 @@ describe('SshCertificate', () => {
     };
 
     // Parse certificate
-    const cert = await SshCertificate.fromText(testEd25519Cert);
+    const cert = await SshCertificate.fromSSH(testEd25519Cert);
 
     // Test all fields
     expect(cert.keyId).toBe(expectedKeyId);

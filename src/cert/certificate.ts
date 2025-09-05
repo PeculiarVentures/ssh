@@ -53,9 +53,9 @@ export class SshCertificate extends SshObject {
   }
 
   /**
-   * Create from certificate text (SSH format)
+   * Create from SSH text (certificate string)
    */
-  static async fromText(text: string): Promise<SshCertificate> {
+  static async fromSSH(text: string): Promise<SshCertificate> {
     const blob = parseWireCertificate(text);
     return new SshCertificate(blob);
   }
@@ -67,19 +67,8 @@ export class SshCertificate extends SshObject {
     return new SshCertificate(blob);
   }
 
-  /**
-   * Export to text (SSH format)
-   */
-  toText(): string {
-    return serializeWireCertificate(this._blob);
-  }
-
-  /**
-   * Export to SSH format (convenience method).
-   * Returns a base64-encoded string in SSH certificate format.
-   */
   async toSSH(): Promise<string> {
-    return this.toText();
+    return serializeWireCertificate(this._blob);
   }
 
   /**
@@ -122,7 +111,7 @@ export class SshCertificate extends SshObject {
     const binding = AlgorithmRegistry.get(sshSignature.algorithm);
 
     // Get CryptoKey and verify
-    const cryptoKey = await verifyKey.toCryptoKey(crypto);
+    const cryptoKey = await verifyKey.toWebCrypto(crypto);
     return binding.verify({
       publicKey: cryptoKey,
       signature: sshSignature.signature,
