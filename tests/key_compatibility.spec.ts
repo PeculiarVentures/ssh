@@ -62,9 +62,8 @@ describe('Key Compatibility', () => {
         expect(publicSsh.startsWith(algo.expectedPrefix)).toBe(true);
 
         // Try to read the key with ssh-keygen to verify compatibility
-        const { execSync } = await import('child_process');
         try {
-          execSync(`ssh-keygen -l -f "${pubFile}"`, { stdio: 'pipe', encoding: 'utf8' });
+          runSshKeygen(['-l', '-f', pubFile]);
           // If no error, ssh-keygen can read the key
         } catch (error: any) {
           throw new Error(`ssh-keygen failed to read ${algo.name} key: ${error.message}`);
@@ -102,6 +101,48 @@ describe('Key Compatibility', () => {
         expect(exportedSsh.length).toBeGreaterThan(0); // Just verify export works
       } finally {
         cleanupTempFiles(privFile, `${privFile}.pub`);
+      }
+    });
+  });
+
+  // Test: Module and ssh-keygen produce same thumbprint
+  algorithms.forEach(algo => {
+    it(`should produce same SHA256 thumbprint as ssh-keygen for ${algo.name}`, async () => {
+      const pubFile = join(
+        tmpDirPath,
+        `ssh-test-thumbprint-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pub`,
+      );
+
+      try {
+        // Create key pair in module
+        const keyPair = await SSH.createKeyPair(algo.moduleType);
+
+        // Export public key to SSH format
+        const publicSsh = `${await keyPair.publicKey.toSSH()} test@example.com`;
+        writeFileSync(pubFile, `${publicSsh}\n`);
+
+        // Get thumbprint using module
+        const moduleThumbprint = await SSH.thumbprint('sha256', keyPair.publicKey, 'ssh');
+
+        // Get thumbprint using ssh-keygen
+        const sshKeygenOutput = runSshKeygen(['-l', '-E', 'sha256', '-f', pubFile]);
+
+        // Parse ssh-keygen output: "256 SHA256:base64hash comment (type)"
+        const match = sshKeygenOutput.match(/SHA256:([A-Za-z0-9+/=]+)/);
+        if (!match) {
+          throw new Error(`Failed to parse ssh-keygen output: ${sshKeygenOutput}`);
+        }
+        const sshKeygenThumbprint = `SHA256:${match[1]}`;
+
+        // Normalize base64 - remove padding for comparison
+        const normalizeBase64 = (str: string) => str.replace(/=+$/, '');
+        const normalizedModule = normalizeBase64(moduleThumbprint);
+        const normalizedSsh = normalizeBase64(sshKeygenThumbprint);
+
+        // Compare normalized thumbprints
+        expect(normalizedModule).toBe(normalizedSsh);
+      } finally {
+        cleanupTempFiles(pubFile);
       }
     });
   });

@@ -13,9 +13,9 @@ export function createTempFile(content: string, ext = 'txt'): string {
 }
 
 // Helper to run ssh-keygen command
-export function runSshKeygen(args: string[]): string {
+export function runSshKeygen(args: string[], quiet = true): string {
   // Add -q flag to suppress informational messages
-  const quietArgs = ['-q', ...args];
+  const quietArgs = quiet ? ['-q', ...args] : args;
   return execSync(`ssh-keygen ${quietArgs.map(arg => `'${arg}'`).join(' ')}`, { encoding: 'utf8' });
 }
 

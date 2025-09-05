@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import {
   ecdsaP256Key,
   ed25519Key,
@@ -9,6 +9,7 @@ import {
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SSH } from './ssh';
+import { SshObject } from './types';
 
 describe('SSH Unified API', () => {
   describe('import', () => {
@@ -106,6 +107,120 @@ describe('SSH Unified API', () => {
       expect(builder).toBeDefined();
       expect(typeof builder.setKeyId).toBe('function');
       expect(typeof builder.addPrincipal).toBe('function');
+    });
+  });
+
+  describe('thumbprint', () => {
+    it('should compute thumbprint for public key in hex format', async () => {
+      const publicKey = await SSH.import(rsaKey);
+      const thumbprint = await SSH.thumbprint('sha256', publicKey, 'hex');
+
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^[0-9a-f]+$/);
+      expect(thumbprint.length).toBe(64); // 32 bytes * 2 hex chars
+    });
+
+    it('should compute thumbprint for public key in base64 format', async () => {
+      const publicKey = await SSH.import(rsaKey);
+      const thumbprint = await SSH.thumbprint('sha256', publicKey, 'base64');
+
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^[A-Za-z0-9+/=]+$/);
+    });
+
+    it('should compute thumbprint for public key in SSH format', async () => {
+      const publicKey = await SSH.import(rsaKey);
+      const thumbprint = await SSH.thumbprint('sha256', publicKey, 'ssh');
+
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^SHA256:[A-Za-z0-9+/=]+$/);
+    });
+
+    it('should compute thumbprint for private key', async () => {
+      const { privateKey, publicKey } = await SSH.createKeyPair('ed25519');
+      const thumbprint = await SSH.thumbprint('sha256', privateKey, 'ssh');
+
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(
+        /^SHA256:[A-Za-z0-9+/=]+$/,
+
+        // Verify thumbprint matches public key thumbprint
+      );
+      const publicKeyThumbprint = await SSH.thumbprint('sha256', publicKey, 'ssh');
+      expect(thumbprint).toBe(publicKeyThumbprint);
+    });
+
+    it('should compute thumbprint for certificate', async () => {
+      // Create a certificate for testing
+      const publicKey = await SSH.import(ed25519Key);
+      const { privateKey: signerPrivateKey, publicKey: signerPublicKey } =
+        await SSH.createKeyPair('ed25519');
+      assert.ok(publicKey instanceof SshPublicKey);
+      const builder = SSH.createCertificate(publicKey);
+      const cert = await builder
+        .setKeyId('test-cert')
+        .addPrincipal('user')
+        .setValidity(Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000) + 86400) // 1 day
+        .sign({
+          signatureKey: signerPublicKey,
+          privateKey: await signerPrivateKey.toWebCrypto(),
+        });
+
+      const thumbprint = await SSH.thumbprint('sha256', cert, 'ssh');
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^SHA256:[A-Za-z0-9+/=]+$/);
+
+      // Verify thumbprint matches public key thumbprint
+      const publicKeyThumbprint = await SSH.thumbprint('sha256', publicKey, 'ssh');
+      expect(thumbprint).toBe(publicKeyThumbprint);
+    });
+
+    it('should compute thumbprint for signature with public key', async () => {
+      const { privateKey, publicKey } = await SSH.createKeyPair('ed25519');
+      const testData = new Uint8Array([1, 2, 3, 4, 5]);
+      const signature = await SSH.sign('ssh-ed25519', privateKey, testData, {
+        format: 'ssh-signature',
+      });
+
+      const thumbprint = await SSH.thumbprint('sha256', signature, 'ssh');
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^SHA256:[A-Za-z0-9+/=]+$/);
+
+      // Verify thumbprint matches public key thumbprint
+      const publicKeyThumbprint = await SSH.thumbprint('sha256', publicKey, 'ssh');
+      expect(thumbprint).toBe(publicKeyThumbprint);
+    });
+
+    it('should throw error for signature without public key', async () => {
+      const { privateKey } = await SSH.createKeyPair('ed25519');
+      const testData = new Uint8Array([1, 2, 3, 4, 5]);
+      const signature = await SSH.sign('ssh-ed25519', privateKey, testData, {
+        format: 'legacy', // Legacy format doesn't include public key
+      });
+
+      await expect(SSH.thumbprint('sha256', signature, 'ssh')).rejects.toThrow(
+        'Signature does not contain a public key',
+      );
+    });
+
+    it('should throw error for unsupported object type', async () => {
+      class CustomObject extends SshObject {
+        type = 'custom';
+        toSSH(): Promise<string> {
+          throw new Error('Method not implemented.');
+        }
+      }
+      await expect(SSH.thumbprint('sha256', new CustomObject(), 'ssh')).rejects.toThrow(
+        'Unsupported object type for thumbprint',
+      );
+    });
+
+    it('should support SHA-512 algorithm', async () => {
+      const publicKey = (await SSH.import(rsaKey)) as SshPublicKey;
+      const thumbprint = await SSH.thumbprint('sha512', publicKey, 'ssh');
+
+      expect(typeof thumbprint).toBe('string');
+      expect(thumbprint).toMatch(/^SHA512:[A-Za-z0-9+/=]+$/);
     });
   });
 });

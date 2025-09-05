@@ -7,7 +7,7 @@ import {
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
-import { SSHObject } from '../types';
+import { SshObject } from '../types';
 import { encoder } from '../utils';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
@@ -15,7 +15,7 @@ import { SshPublicKey } from './public_key';
 
 export type SshPrivateKeyExportFormat = 'ssh' | 'pkcs8';
 
-export class SshPrivateKey extends SSHObject {
+export class SshPrivateKey extends SshObject {
   public static readonly TYPE = 'private-key';
   public readonly type = SshPrivateKey.TYPE;
 

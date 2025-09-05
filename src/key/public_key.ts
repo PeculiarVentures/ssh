@@ -2,7 +2,7 @@ import { getCrypto } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { ByteView, SshKeyType } from '../types';
-import { SSHObject } from '../types';
+import { SshObject } from '../types';
 import {
   parsePublicKey as parseWirePublicKey,
   serializePublicKey as serializeWirePublicKey,
@@ -11,7 +11,7 @@ import {
 
 export type SshPublicKeyExportFormat = 'ssh' | 'spki';
 
-export class SshPublicKey extends SSHObject {
+export class SshPublicKey extends SshObject {
   public static readonly TYPE = 'public-key';
   public readonly type = SshPublicKey.TYPE;
 
@@ -176,5 +176,18 @@ export class SshPublicKey extends SSHObject {
    */
   getBlob(): SshPublicKeyBlob {
     return { ...this.blob };
+  }
+
+  /**
+   * Compute thumbprint of the public key
+   */
+  async thumbprint(
+    algorithm: 'sha256' | 'sha512' = 'sha256',
+    crypto = getCrypto(),
+  ): Promise<Uint8Array> {
+    const hashAlgorithm = algorithm === 'sha256' ? 'SHA-256' : 'SHA-512';
+    const data = this.blob.keyData as BufferSource;
+    const hash = await crypto.subtle.digest(hashAlgorithm, data);
+    return new Uint8Array(hash);
   }
 }

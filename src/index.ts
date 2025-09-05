@@ -1,8 +1,8 @@
 // Crypto provider
-export { getCrypto, setCrypto, type CryptoLike } from './crypto';
+export { getCrypto, setCrypto } from './crypto';
 
 // Common types
-export type { ByteView, Dict, SSHObject, SshKeyType, SshSignatureAlgo } from './types';
+export type { ByteView, Dict, SshKeyType, SshObject, SshSignatureAlgo } from './types';
 
 // Error classes
 export * from './errors';

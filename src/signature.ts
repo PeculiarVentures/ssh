@@ -4,7 +4,7 @@ import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { AlgorithmRegistry } from './registry';
 import type { SshKeyType, SshSignatureAlgo } from './types';
-import { SSHObject } from './types';
+import { SshObject } from './types';
 import { SshReader } from './wire/reader';
 import {
   parseSignature,
@@ -14,7 +14,7 @@ import {
 } from './wire/signature';
 import { SshWriter } from './wire/writer';
 
-export class SshSignature extends SSHObject {
+export class SshSignature extends SshObject {
   public static readonly TYPE = 'signature';
   public readonly type = SshSignature.TYPE;
 
@@ -42,8 +42,7 @@ export class SshSignature extends SSHObject {
     if (blob.publicKey) {
       const reader = new SshReader(blob.publicKey);
       const type = reader.readString() as SshKeyType;
-      const keyData = blob.publicKey.slice(reader.getOffset());
-      this.publicKey = new SshPublicKey({ type, keyData });
+      this.publicKey = new SshPublicKey({ type, keyData: blob.publicKey });
     }
   }
 
@@ -109,9 +108,6 @@ export class SshSignature extends SSHObject {
     return ['-----BEGIN SSH SIGNATURE-----', ...lines, '-----END SSH SIGNATURE-----'].join('\n');
   }
 
-  /**
-   * Export to SSH format (convenience method for SSHObject interface)
-   */
   async toSSH(): Promise<string> {
     return this.toText();
   }

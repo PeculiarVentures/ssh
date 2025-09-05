@@ -2,7 +2,7 @@ import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
 import { SshSignature } from '../signature';
-import { SSHObject } from '../types';
+import { SshObject } from '../types';
 import {
   parseCertificateData,
   parse as parseWireCertificate,
@@ -14,7 +14,7 @@ import { SshReader } from '../wire/reader';
 
 export type SshCertificateType = 'user' | 'host';
 
-export class SshCertificate extends SSHObject {
+export class SshCertificate extends SshObject {
   public static readonly TYPE = 'certificate';
   public readonly type = SshCertificate.TYPE;
 

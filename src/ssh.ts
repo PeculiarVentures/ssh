@@ -1,3 +1,4 @@
+import { Convert } from 'pvtsutils';
 import { SshCertificateBuilder } from './cert/builder';
 import { SshCertificate } from './cert/certificate';
 import { getCrypto } from './crypto';
@@ -5,7 +6,7 @@ import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError 
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SshSignature } from './signature';
-import type { ByteView, SshKeyType, SSHObject } from './types';
+import type { ByteView, SshKeyType, SshObject } from './types';
 
 export interface ImportOptions {
   format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
@@ -39,7 +40,7 @@ export type SshAlgorithmIdentifier = string | RsaAlgorithm | Ed25519Algorithm | 
 /**
  * Union type for all SSH objects that can be imported
  */
-export type SshType = SSHObject | SshPrivateKey | SshPublicKey | SshCertificate | SshSignature;
+export type SshType = SshObject | SshPrivateKey | SshPublicKey | SshCertificate | SshSignature;
 
 /**
  * Unified SSH API - provides convenient methods for working with SSH keys and certificates
@@ -315,5 +316,49 @@ export class SSH {
     } = {},
   ): Promise<SshSignature> {
     return SshSignature.sign(algorithm, privateKey, data, options);
+  }
+
+  /**
+   * Compute thumbprint of an SSH object
+   */
+  static async thumbprint(
+    algorithm: 'sha256' | 'sha512',
+    object: SshObject,
+    format: 'hex' | 'base64' | 'ssh',
+    crypto = getCrypto(),
+  ): Promise<string> {
+    let publicKey: SshPublicKey;
+
+    if (object instanceof SshPublicKey) {
+      publicKey = object;
+    } else if (object instanceof SshPrivateKey) {
+      publicKey = await object.getPublicKey(crypto);
+    } else if (object instanceof SshCertificate) {
+      publicKey = object.publicKey;
+    } else if (object instanceof SshSignature) {
+      if (!object.publicKey) {
+        throw new Error('Signature does not contain a public key');
+      }
+      publicKey = object.publicKey;
+    } else {
+      throw new Error('Unsupported object type for thumbprint');
+    }
+
+    const hash = await publicKey.thumbprint(algorithm, crypto);
+
+    switch (format) {
+      case 'hex':
+        return Array.from(hash)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      case 'base64':
+        return Convert.ToBase64(hash);
+      case 'ssh': {
+        const prefix = algorithm === 'sha256' ? 'SHA256' : 'SHA512';
+        return `${prefix}:${Convert.ToBase64(hash)}`;
+      }
+      default:
+        throw new Error(`Unsupported format: ${format}`);
+    }
   }
 }

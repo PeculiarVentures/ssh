@@ -66,7 +66,9 @@ export type HashAlgorithm = 'SHA-256' | 'SHA-512';
 /**
  * Abstract base class for all SSH objects
  */
-export abstract class SSHObject {
+export abstract class SshObject {
+  /** SSH object type */
   abstract readonly type: string;
+  /** Export to SSH format */
   abstract toSSH(): Promise<string>;
 }

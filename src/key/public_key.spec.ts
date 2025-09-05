@@ -100,13 +100,34 @@ describe('SshPublicKey', () => {
     // expect(isValid).toBe(true);
   });
 
+  it('should compute thumbprint', async () => {
+    // Generate test key
+    const keyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+
+    // Test SHA-256 thumbprint
+    const thumbprint256 = await publicKey.thumbprint('sha256');
+    expect(thumbprint256).toBeInstanceOf(Uint8Array);
+    expect(thumbprint256.length).toBe(32); // SHA-256 produces 32 bytes
+
+    // Test SHA-512 thumbprint
+    const thumbprint512 = await publicKey.thumbprint('sha512');
+    expect(thumbprint512).toBeInstanceOf(Uint8Array);
+    expect(thumbprint512.length).toBe(64); // SHA-512 produces 64 bytes
+
+    // Test default algorithm (SHA-256)
+    const defaultThumbprint = await publicKey.thumbprint();
+    expect(defaultThumbprint).toEqual(thumbprint256);
+  });
+
   it('should verify RSA signatures with different hashes', async () => {
     // Generate RSA key pair
     const keyPair = await crypto.subtle.generateKey(
       {
         name: 'RSASSA-PKCS1-v1_5',
         modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]), // 65537
+        publicExponent: new Uint8Array([1, 0, 1]),
         hash: 'SHA-256',
       },
       true,
