@@ -47,3 +47,13 @@ jobs:
         with:
           parallel: true
           flag-name: run-${{ matrix.node-version }}
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close parallel build
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+          carryforward: 'run-22.x'
