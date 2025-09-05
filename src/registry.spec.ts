@@ -4,20 +4,21 @@ import { AlgorithmRegistry } from './registry';
 describe('AlgorithmRegistry', () => {
   it('should register and get algorithm binding', () => {
     const mockBinding = {
-      importPublicFromSsh: vi.fn(),
-      exportPublicToSsh: vi.fn(),
+      importPublicSsh: vi.fn(),
+      exportPublicSsh: vi.fn(),
       importPublicSpki: vi.fn(),
       exportPublicSpki: vi.fn(),
       importPrivatePkcs8: vi.fn(),
       exportPrivatePkcs8: vi.fn(),
-      importPrivateFromSsh: vi.fn(),
+      importPrivateSsh: vi.fn(),
+      exportPrivateSsh: vi.fn(),
       sign: vi.fn(),
       verify: vi.fn(),
-      encodeSshSignature: vi.fn(),
-      decodeSshSignature: vi.fn(),
+      encodeSignature: vi.fn(),
+      decodeSignature: vi.fn(),
       supportsCryptoKey: vi.fn(),
-      parseCertificatePublicKey: vi.fn(),
-      writeCertificatePublicKey: vi.fn(),
+      parsePublicKey: vi.fn(),
+      writePublicKey: vi.fn(),
       getCertificateType: vi.fn(),
       getSignatureAlgo: vi.fn(),
     };

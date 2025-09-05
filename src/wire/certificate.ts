@@ -1,7 +1,7 @@
 import { Convert } from 'pvtsutils';
 import { InvalidFormatError, UnsupportedAlgorithmError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
-import type { ByteView, SshKeyType } from '../types';
+import type { SshKeyType } from '../types';
 import { decoder, encoder } from '../utils';
 import type { SshPublicKeyBlob } from './public_key';
 import { SshReader } from './reader';
@@ -30,7 +30,7 @@ export interface SshCertificateData {
   signature: Uint8Array;
 }
 
-export function parse(input: ByteView | string): SshCertificateBlob {
+export function parse(input: Uint8Array | string): SshCertificateBlob {
   if (typeof input === 'string') {
     const parts = input.trim().split(/\s+/);
     if (parts.length < 2) {
@@ -54,16 +54,9 @@ export function parse(input: ByteView | string): SshCertificateBlob {
       comment,
     };
   } else {
-    let data: Uint8Array;
-    if (input instanceof ArrayBuffer) {
-      data = new Uint8Array(input);
-    } else {
-      data = input;
-    }
-
-    const reader = new SshReader(data);
+    const reader = new SshReader(input);
     const type = reader.readString() as SshKeyType;
-    const keyData = data.slice(reader.getOffset());
+    const keyData = input.slice(reader.getOffset());
 
     return {
       type,
@@ -90,7 +83,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 
   // Get the algorithm binding and parse the public key
   const binding = AlgorithmRegistry.get(mappedKeyType);
-  const publicKey = binding.parseCertificatePublicKey(reader);
+  const publicKey = binding.parsePublicKey(reader);
   const keyType = mappedKeyType;
 
   // Read serial
@@ -255,7 +248,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
 
   // Write public key data based on key type
   const binding = AlgorithmRegistry.get(keyType);
-  binding.writeCertificatePublicKey(writer, publicKey);
+  binding.writePublicKey(writer, publicKey);
 
   // Write serial
   writer.writeUint64(serial);

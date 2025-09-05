@@ -1,7 +1,7 @@
 import { getCrypto } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
-import type { ByteView, SshKeyType } from '../types';
+import type { SshKeyType } from '../types';
 import { SshObject } from '../types';
 import {
   parsePublicKey as parseWirePublicKey,
@@ -30,7 +30,7 @@ export class SshPublicKey extends SshObject {
     if (!this.cachedCryptoKey) {
       const binding = AlgorithmRegistry.get(this.blob.type);
 
-      this.cachedCryptoKey = await binding.importPublicFromSsh({ blob: this.blob.keyData, crypto });
+      this.cachedCryptoKey = await binding.importPublicSsh({ blob: this.blob.keyData, crypto });
     }
     return this.cachedCryptoKey;
   }
@@ -40,19 +40,19 @@ export class SshPublicKey extends SshObject {
     const binding = AlgorithmRegistry.get(blob.type);
 
     // Validate that the key can be imported (but don't store CryptoKey)
-    await binding.importPublicFromSsh({ blob: blob.keyData, crypto });
+    await binding.importPublicSsh({ blob: blob.keyData, crypto });
     return new SshPublicKey(blob);
   }
 
   static async fromSPKI(
-    spki: ByteView,
+    spki: Uint8Array,
     type: SshKeyType,
     crypto = getCrypto(),
   ): Promise<SshPublicKey> {
     const binding = AlgorithmRegistry.get(type);
 
     const cryptoKey = await binding.importPublicSpki({ spki, crypto });
-    const exported = await binding.exportPublicToSsh({ publicKey: cryptoKey, crypto });
+    const exported = await binding.exportPublicSsh({ publicKey: cryptoKey, crypto });
     const blob: SshPublicKeyBlob = {
       type,
       keyData: exported,
@@ -71,7 +71,7 @@ export class SshPublicKey extends SshObject {
 
     const binding = AlgorithmRegistry.get(sshType);
 
-    const exported = await binding.exportPublicToSsh({ publicKey: cryptoKey, crypto });
+    const exported = await binding.exportPublicSsh({ publicKey: cryptoKey, crypto });
     const blob: SshPublicKeyBlob = {
       type: sshType,
       keyData: exported,
@@ -127,7 +127,7 @@ export class SshPublicKey extends SshObject {
   async verify(
     algorithm: string,
     signature: Uint8Array,
-    data: ByteView,
+    data: Uint8Array,
     crypto = getCrypto(),
   ): Promise<boolean> {
     // Get binding for the signature algorithm

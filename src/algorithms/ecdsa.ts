@@ -76,7 +76,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     return this.getExpectedLength();
   }
 
-  async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
+  async importPublicSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
 
@@ -114,7 +114,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
+  async exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
     const jwk = await crypto.subtle.exportKey('jwk', publicKey);
 
@@ -154,9 +154,10 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer> {
+  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    return crypto.subtle.exportKey('spki', publicKey);
+    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    return BufferSourceConverter.toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -173,12 +174,13 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
+  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
-    return crypto.subtle.exportKey('pkcs8', privateKey);
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    return BufferSourceConverter.toUint8Array(pkcs8);
   }
 
-  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+  async exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
     const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to get all parameters
@@ -208,7 +210,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  async importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
+  async importPrivateSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
@@ -218,7 +220,7 @@ export class EcdsaBinding implements AlgorithmBinding {
       .replace(/\s/g, '');
 
     const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(binaryData);
+    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
 
     // Check magic string
     const magic = reader.readBytes(15);
@@ -304,7 +306,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  async sign(params: SignParams): Promise<ArrayBuffer> {
+  async sign(params: SignParams): Promise<Uint8Array> {
     const { privateKey, data, crypto, hash } = params;
 
     // Get the correct hash algorithm for this curve
@@ -317,7 +319,7 @@ export class EcdsaBinding implements AlgorithmBinding {
       );
     }
 
-    return crypto.subtle.sign(
+    const signature = await crypto.subtle.sign(
       {
         name: 'ECDSA',
         hash: expectedHash,
@@ -325,6 +327,7 @@ export class EcdsaBinding implements AlgorithmBinding {
       privateKey,
       BufferSourceConverter.toArrayBuffer(data),
     );
+    return BufferSourceConverter.toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
@@ -351,17 +354,15 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array {
+  encodeSignature(params: EncodeSshSignatureParams): Uint8Array {
     const { signature, algo } = params;
 
     // For ECDSA, convert from raw format to SSH format (r+s)
     if (algo.startsWith('ecdsa-sha2-')) {
-      const sigBytes = signature instanceof Uint8Array ? signature : new Uint8Array(signature);
-
       // Split concatenated r+s back into components
       const coordLength = this.getSignatureCoordLength();
-      const r = sigBytes.slice(0, coordLength);
-      const s = sigBytes.slice(coordLength);
+      const r = signature.subarray(0, coordLength);
+      const s = signature.subarray(coordLength);
 
       const writer = new SshWriter();
       writer.writeString(algo);
@@ -384,7 +385,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
+  decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
     const reader = new SshReader(signature);
     const algo = reader.readString() as SshSignatureAlgo;
@@ -437,7 +438,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     );
   }
 
-  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob {
+  parsePublicKey(reader: SshReader): SshPublicKeyBlob {
     // Read ECDSA public key from certificate format
     const curveName = reader.readString();
     if (curveName !== this.curveName) {
@@ -459,7 +460,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     };
   }
 
-  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+  writePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
     // For ECDSA, extract curve name and public point
     const publicKeyReader = new SshReader(publicKey.keyData);
     publicKeyReader.readString(); // Skip "ecdsa-sha2-nistp256" etc.

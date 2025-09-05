@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { BufferSourceConverter, Convert } from 'pvtsutils';
 import {
   EncryptedKeyNotSupportedError,
   InvalidKeyDataError,
@@ -26,7 +26,7 @@ import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
 export class Ed25519Binding implements AlgorithmBinding {
-  async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
+  async importPublicSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
 
@@ -47,7 +47,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     ]);
   }
 
-  async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
+  async exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
 
     // Export from WebCrypto to JWK format first, then extract the key
@@ -74,10 +74,11 @@ export class Ed25519Binding implements AlgorithmBinding {
     return crypto.subtle.importKey('spki', spki as BufferSource, 'Ed25519', true, ['verify']);
   }
 
-  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer> {
+  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
 
-    return crypto.subtle.exportKey('spki', publicKey);
+    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    return BufferSourceConverter.toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -86,13 +87,14 @@ export class Ed25519Binding implements AlgorithmBinding {
     return crypto.subtle.importKey('pkcs8', pkcs8 as BufferSource, 'Ed25519', true, ['sign']);
   }
 
-  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
+  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
 
-    return crypto.subtle.exportKey('pkcs8', privateKey);
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    return BufferSourceConverter.toUint8Array(pkcs8);
   }
 
-  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+  async exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
     const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key as JWK to get private scalar
@@ -123,7 +125,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  async importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
+  async importPrivateSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
@@ -133,7 +135,7 @@ export class Ed25519Binding implements AlgorithmBinding {
       .replace(/\s/g, '');
 
     const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(binaryData);
+    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
 
     // Check magic string
     const magic = reader.readBytes(15);
@@ -201,10 +203,11 @@ export class Ed25519Binding implements AlgorithmBinding {
     return crypto.subtle.importKey('jwk', jwk, 'Ed25519', true, ['sign']);
   }
 
-  async sign(params: SignParams): Promise<ArrayBuffer> {
+  async sign(params: SignParams): Promise<Uint8Array> {
     const { privateKey, data, crypto } = params;
 
-    return crypto.subtle.sign('Ed25519', privateKey, data as any);
+    const signature = await crypto.subtle.sign('Ed25519', privateKey, data as any);
+    return BufferSourceConverter.toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
@@ -213,7 +216,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     return crypto.subtle.verify('Ed25519', publicKey, signature as any, data as any);
   }
 
-  encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array {
+  encodeSignature(params: EncodeSshSignatureParams): Uint8Array {
     const { signature, algo } = params;
 
     const sigBytes = new Uint8Array(signature);
@@ -224,7 +227,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
+  decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
 
     const reader = new SshReader(signature);
@@ -243,7 +246,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     return cryptoKey.algorithm.name === 'Ed25519';
   }
 
-  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob {
+  parsePublicKey(reader: SshReader): SshPublicKeyBlob {
     // Read Ed25519 public key from certificate format
     const publicKeyData = reader.readBytes(reader.readUint32()); // 32-byte Ed25519 public key
 
@@ -259,7 +262,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     };
   }
 
-  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+  writePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
     // For Ed25519, extract the raw key data (skip type string and length)
     const publicKeyReader = new SshReader(publicKey.keyData);
     publicKeyReader.readString(); // Skip "ssh-ed25519"

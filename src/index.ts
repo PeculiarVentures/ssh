@@ -2,7 +2,7 @@
 export { getCrypto, setCrypto } from './crypto';
 
 // Common types
-export type { ByteView, Dict, SshKeyType, SshObject, SshSignatureAlgo } from './types';
+export type { Dict, SshKeyType, SshObject, SshSignatureAlgo } from './types';
 
 // Error classes
 export * from './errors';

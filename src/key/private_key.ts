@@ -6,7 +6,7 @@ import {
   UnsupportedKeyTypeError,
 } from '../errors.js';
 import { AlgorithmRegistry } from '../registry';
-import type { ByteView, SshKeyType } from '../types';
+import type { SshKeyType } from '../types';
 import { SshObject } from '../types';
 import { encoder } from '../utils';
 import { SshReader } from '../wire/reader';
@@ -55,7 +55,7 @@ export class SshPrivateKey extends SshObject {
     const binding = AlgorithmRegistry.get(keyType);
 
     // Import using the specific binding
-    const cryptoKey = await binding.importPrivateFromSsh({ sshKey, crypto });
+    const cryptoKey = await binding.importPrivateSsh({ sshKey, crypto });
     return new SshPrivateKey(cryptoKey, keyType as SshKeyType);
   }
 
@@ -124,7 +124,7 @@ export class SshPrivateKey extends SshObject {
    * Import from PKCS#8 format
    */
   static async fromPKCS8(
-    pkcs8: ByteView,
+    pkcs8: Uint8Array,
     type: SshKeyType,
     crypto = getCrypto(),
   ): Promise<SshPrivateKey> {
@@ -153,10 +153,6 @@ export class SshPrivateKey extends SshObject {
     if (format === 'ssh') {
       const binding = AlgorithmRegistry.get(this.keyType);
 
-      if (!binding.exportPrivateToSsh) {
-        throw new UnsupportedKeyTypeError(`SSH export not supported for ${this.keyType}`);
-      }
-
       // Export public key blob for the outer structure using cached public key
       const publicKey = await this.getPublicKey(crypto);
       const publicBlob = publicKey.getBlob().keyData;
@@ -165,7 +161,7 @@ export class SshPrivateKey extends SshObject {
       const jwk = await this.toJWK(crypto);
 
       // Export algorithm-specific private data
-      const privateData = await binding.exportPrivateToSsh({
+      const privateData = await binding.exportPrivateSsh({
         privateKey: this.cryptoKey,
         crypto,
         jwk,
@@ -272,7 +268,7 @@ export class SshPrivateKey extends SshObject {
 
     const binding = AlgorithmRegistry.get(this.keyType);
 
-    const exported = await binding.exportPublicToSsh({ publicKey: this.cryptoKey, crypto });
+    const exported = await binding.exportPublicSsh({ publicKey: this.cryptoKey, crypto });
     const blob = {
       type: this.keyType,
       keyData: exported,
@@ -285,7 +281,7 @@ export class SshPrivateKey extends SshObject {
   /**
    * Sign data and return raw signature
    */
-  async sign(algo: string, data: ByteView, crypto = getCrypto()): Promise<Uint8Array> {
+  async sign(algo: string, data: Uint8Array, crypto = getCrypto()): Promise<Uint8Array> {
     const binding = AlgorithmRegistry.get(algo);
 
     const signature = await binding.sign({ privateKey: this.cryptoKey, data, crypto });

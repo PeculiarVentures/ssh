@@ -1,68 +1,62 @@
 import { UnsupportedKeyTypeError } from './errors.js';
-import type { ByteView, SshSignatureAlgo } from './types';
+import type { SshSignatureAlgo } from './types';
 import type { SshPublicKeyBlob } from './wire/public_key';
 import { SshReader } from './wire/reader';
 import { SshWriter } from './wire/writer';
 
-export interface ImportPublicFromSshParams {
+export interface CommonAlgorithmParams {
+  crypto: Crypto;
+}
+
+export interface ImportPublicFromSshParams extends CommonAlgorithmParams {
   blob: Uint8Array;
-  crypto: Crypto;
 }
 
-export interface ExportPublicToSshParams {
+export interface ExportPublicToSshParams extends CommonAlgorithmParams {
   publicKey: CryptoKey;
-  crypto: Crypto;
 }
 
-export interface ImportPublicSpkiParams {
-  spki: ByteView;
-  crypto: Crypto;
+export interface ImportPublicSpkiParams extends CommonAlgorithmParams {
+  spki: Uint8Array;
 }
 
-export interface ExportPublicSpkiParams {
+export interface ExportPublicSpkiParams extends CommonAlgorithmParams {
   publicKey: CryptoKey;
-  crypto: Crypto;
 }
 
-export interface ImportPrivatePkcs8Params {
-  pkcs8: ByteView;
-  crypto: Crypto;
+export interface ImportPrivatePkcs8Params extends CommonAlgorithmParams {
+  pkcs8: Uint8Array;
 }
 
-export interface ExportPrivatePkcs8Params {
+export interface ExportPrivatePkcs8Params extends CommonAlgorithmParams {
   privateKey: CryptoKey;
-  crypto: Crypto;
 }
 
-export interface ExportPrivateToSshParams {
+export interface ExportPrivateToSshParams extends CommonAlgorithmParams {
   privateKey: CryptoKey;
   publicKey?: CryptoKey;
-  crypto: Crypto;
   jwk?: JsonWebKey;
 }
 
-export interface ImportPrivateFromSshParams {
+export interface ImportPrivateFromSshParams extends CommonAlgorithmParams {
   sshKey: string;
-  crypto: Crypto;
 }
 
-export interface SignParams {
+export interface SignParams extends CommonAlgorithmParams {
   privateKey: CryptoKey;
-  data: ByteView;
-  crypto: Crypto;
+  data: Uint8Array;
   hash?: 'SHA-256' | 'SHA-512';
 }
 
-export interface VerifyParams {
+export interface VerifyParams extends CommonAlgorithmParams {
   publicKey: CryptoKey;
-  signature: ByteView;
-  data: ByteView;
-  crypto: Crypto;
+  signature: Uint8Array;
+  data: Uint8Array;
   hash?: 'SHA-256' | 'SHA-512';
 }
 
 export interface EncodeSshSignatureParams {
-  signature: ByteView;
+  signature: Uint8Array;
   algo: SshSignatureAlgo;
 }
 
@@ -76,21 +70,29 @@ export interface DecodeSshSignatureParams {
 }
 
 export interface AlgorithmBinding {
-  importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey>;
-  exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array>;
+  importPublicSsh(params: ImportPublicFromSshParams): Promise<CryptoKey>;
+  exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array>;
 
   importPublicSpki(params: ImportPublicSpkiParams): Promise<CryptoKey>;
-  exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer>;
+  exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array>;
   importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey>;
-  exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer>;
-  importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey>;
-  exportPrivateToSsh?(params: ExportPrivateToSshParams): Promise<Uint8Array>;
+  exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array>;
+  importPrivateSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey>;
+  exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array>;
 
-  sign(params: SignParams): Promise<ArrayBuffer>;
+  /**
+   * Sign data using the private key
+   * @param params - Parameters for signing
+   * @returns Raw signature
+   */
+  sign(params: SignParams): Promise<Uint8Array>;
+  /**
+   * Verify data using the public key
+   */
   verify(params: VerifyParams): Promise<boolean>;
 
-  encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array;
-  decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult;
+  encodeSignature(params: EncodeSshSignatureParams): Uint8Array;
+  decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult;
 
   /**
    * Check if this binding supports the given WebCrypto CryptoKey
@@ -102,14 +104,14 @@ export interface AlgorithmBinding {
    * @param reader - SshReader positioned at public key data in certificate
    * @returns SshPublicKeyBlob in standard SSH format
    */
-  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob;
+  parsePublicKey(reader: SshReader): SshPublicKeyBlob;
 
   /**
    * Write public key to certificate format
    * @param writer - SshWriter to write to
    * @param publicKey - SshPublicKeyBlob to serialize
    */
-  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void;
+  writePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void;
 
   /**
    * Get certificate type for this algorithm

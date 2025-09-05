@@ -7,7 +7,7 @@ import { SshReader, SshWriter } from '../wire';
 describe('ECDSA Algorithm', () => {
   it('should parse ECDSA P-256 public key from certificate format', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
-    expect(ecdsaBinding.parseCertificatePublicKey).toBeDefined();
+    expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-256
     const mockPubKey = new Uint8Array(65);
@@ -22,10 +22,10 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parseCertificatePublicKey) {
+    if (!ecdsaBinding.parsePublicKey) {
       throw new Error('parseCertificatePublicKey method not found');
     }
-    const publicKey = ecdsaBinding.parseCertificatePublicKey(reader);
+    const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
     expect(publicKey.keyData).toBeDefined();
@@ -40,7 +40,7 @@ describe('ECDSA Algorithm', () => {
 
   it('should parse ECDSA P-384 public key from certificate format', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
-    expect(ecdsaBinding.parseCertificatePublicKey).toBeDefined();
+    expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-384
     const mockPubKey = new Uint8Array(97);
@@ -55,10 +55,10 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parseCertificatePublicKey) {
+    if (!ecdsaBinding.parsePublicKey) {
       throw new Error('parseCertificatePublicKey method not found');
     }
-    const publicKey = ecdsaBinding.parseCertificatePublicKey(reader);
+    const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp384');
     expect(publicKey.keyData).toBeDefined();
@@ -73,7 +73,7 @@ describe('ECDSA Algorithm', () => {
 
   it('should parse ECDSA P-521 public key from certificate format', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
-    expect(ecdsaBinding.parseCertificatePublicKey).toBeDefined();
+    expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-521
     const mockPubKey = new Uint8Array(133);
@@ -88,10 +88,10 @@ describe('ECDSA Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
-    if (!ecdsaBinding.parseCertificatePublicKey) {
+    if (!ecdsaBinding.parsePublicKey) {
       throw new Error('parseCertificatePublicKey method not found');
     }
-    const publicKey = ecdsaBinding.parseCertificatePublicKey(reader);
+    const publicKey = ecdsaBinding.parsePublicKey(reader);
 
     expect(publicKey.type).toBe('ecdsa-sha2-nistp521');
     expect(publicKey.keyData).toBeDefined();
@@ -106,8 +106,8 @@ describe('ECDSA Algorithm', () => {
 
   it('should encode and decode SSH signature correctly for P-256', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
-    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
-    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.encodeSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSignature).toBeDefined();
 
     // Create mock ECDSA signature (raw r+s concatenated, 64 bytes for P-256)
     const mockSignature = new Uint8Array(64);
@@ -116,13 +116,13 @@ describe('ECDSA Algorithm', () => {
     }
 
     // Encode to SSH format
-    const sshSignature = ecdsaBinding.encodeSshSignature({
+    const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
       algo: 'ecdsa-sha2-nistp256',
     });
 
     // Decode back
-    const decoded = ecdsaBinding.decodeSshSignature({
+    const decoded = ecdsaBinding.decodeSignature({
       signature: sshSignature,
     });
 
@@ -132,8 +132,8 @@ describe('ECDSA Algorithm', () => {
 
   it('should encode and decode SSH signature correctly for P-384', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
-    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
-    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.encodeSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSignature).toBeDefined();
 
     // Create mock ECDSA signature (raw r+s concatenated, 96 bytes for P-384)
     const mockSignature = new Uint8Array(96);
@@ -142,13 +142,13 @@ describe('ECDSA Algorithm', () => {
     }
 
     // Encode to SSH format
-    const sshSignature = ecdsaBinding.encodeSshSignature({
+    const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
       algo: 'ecdsa-sha2-nistp384',
     });
 
     // Decode back
-    const decoded = ecdsaBinding.decodeSshSignature({
+    const decoded = ecdsaBinding.decodeSignature({
       signature: sshSignature,
     });
 
@@ -158,8 +158,8 @@ describe('ECDSA Algorithm', () => {
 
   it('should encode and decode SSH signature correctly for P-521', () => {
     const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
-    expect(ecdsaBinding.encodeSshSignature).toBeDefined();
-    expect(ecdsaBinding.decodeSshSignature).toBeDefined();
+    expect(ecdsaBinding.encodeSignature).toBeDefined();
+    expect(ecdsaBinding.decodeSignature).toBeDefined();
 
     // Create mock ECDSA signature (raw r+s concatenated, 132 bytes for P-521)
     const mockSignature = new Uint8Array(132);
@@ -168,13 +168,13 @@ describe('ECDSA Algorithm', () => {
     }
 
     // Encode to SSH format
-    const sshSignature = ecdsaBinding.encodeSshSignature({
+    const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
       algo: 'ecdsa-sha2-nistp521',
     });
 
     // Decode back
-    const decoded = ecdsaBinding.decodeSshSignature({
+    const decoded = ecdsaBinding.decodeSignature({
       signature: sshSignature,
     });
 
@@ -192,7 +192,7 @@ describe('ECDSA Algorithm', () => {
     const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
 
     // Import the public key
-    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+    const cryptoKey = await ecdsaBinding.importPublicSsh({
       blob: keyData,
       crypto,
     });
@@ -213,7 +213,7 @@ describe('ECDSA Algorithm', () => {
     const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
 
     // Import the public key
-    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+    const cryptoKey = await ecdsaBinding.importPublicSsh({
       blob: keyData,
       crypto,
     });
@@ -234,13 +234,13 @@ describe('ECDSA Algorithm', () => {
     const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
 
     // Import the public key
-    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+    const cryptoKey = await ecdsaBinding.importPublicSsh({
       blob: originalKeyData,
       crypto,
     });
 
     // Export it back to SSH format
-    const exportedKeyData = await ecdsaBinding.exportPublicToSsh({
+    const exportedKeyData = await ecdsaBinding.exportPublicSsh({
       publicKey: cryptoKey,
       crypto,
     });
@@ -259,13 +259,13 @@ describe('ECDSA Algorithm', () => {
     const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
 
     // Import the public key
-    const cryptoKey = await ecdsaBinding.importPublicFromSsh({
+    const cryptoKey = await ecdsaBinding.importPublicSsh({
       blob: originalKeyData,
       crypto,
     });
 
     // Export it back to SSH format
-    const exportedKeyData = await ecdsaBinding.exportPublicToSsh({
+    const exportedKeyData = await ecdsaBinding.exportPublicSsh({
       publicKey: cryptoKey,
       crypto,
     });

@@ -1,3 +1,4 @@
+import { BufferSourceConverter } from 'pvtsutils';
 import { describe, expect, it } from 'vitest';
 import { getCrypto } from '../crypto';
 import { AlgorithmRegistry } from '../registry';
@@ -27,13 +28,13 @@ describe('Ed25519 Algorithm', () => {
     );
 
     // Export to SSH format
-    const sshBlob = await ed25519Binding.exportPublicToSsh({
+    const sshBlob = await ed25519Binding.exportPublicSsh({
       publicKey: keyPair.publicKey,
       crypto,
     });
 
     // Import back
-    const importedKey = await ed25519Binding.importPublicFromSsh({
+    const importedKey = await ed25519Binding.importPublicSsh({
       blob: sshBlob,
       crypto,
     });
@@ -65,7 +66,7 @@ describe('Ed25519 Algorithm', () => {
 
     // Import via our binding
     const importedKey = await ed25519Binding.importPrivatePkcs8({
-      pkcs8,
+      pkcs8: BufferSourceConverter.toUint8Array(pkcs8),
       crypto,
     });
 
@@ -139,13 +140,13 @@ describe('Ed25519 Algorithm', () => {
     });
 
     // Encode to SSH format
-    const sshSignature = ed25519Binding.encodeSshSignature({
+    const sshSignature = ed25519Binding.encodeSignature({
       signature: rawSignature,
       algo: 'ssh-ed25519',
     });
 
     // Decode back
-    const decoded = ed25519Binding.decodeSshSignature({
+    const decoded = ed25519Binding.decodeSignature({
       signature: sshSignature,
     });
 
@@ -173,7 +174,7 @@ describe('Ed25519 Algorithm', () => {
 
     // Import via our binding
     const importedKey = await ed25519Binding.importPublicSpki({
-      spki,
+      spki: BufferSourceConverter.toUint8Array(spki),
       crypto,
     });
 
@@ -189,7 +190,7 @@ describe('Ed25519 Algorithm', () => {
 
   it('should parse Ed25519 public key from certificate format', () => {
     const ed25519Binding = AlgorithmRegistry.get('ssh-ed25519');
-    expect(ed25519Binding.parseCertificatePublicKey).toBeDefined();
+    expect(ed25519Binding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for Ed25519 (32 bytes public key)
     const mockPubKey = new Uint8Array(32);
@@ -202,7 +203,7 @@ describe('Ed25519 Algorithm', () => {
     writer.writeBytes(mockPubKey); // public key data
 
     const reader = new SshReader(writer.toUint8Array());
-    const parseMethod = ed25519Binding.parseCertificatePublicKey;
+    const parseMethod = ed25519Binding.parsePublicKey;
     expect(parseMethod).toBeDefined();
     if (!parseMethod) {
       throw new Error('parseCertificatePublicKey method not found');

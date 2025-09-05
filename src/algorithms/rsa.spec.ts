@@ -12,7 +12,7 @@ describe('RSA Algorithm', () => {
 
   it('should parse RSA public key from certificate format', () => {
     const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
-    expect(rsaBinding.parseCertificatePublicKey).toBeDefined();
+    expect(rsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for RSA
     const writer = new SshWriter();
@@ -22,7 +22,7 @@ describe('RSA Algorithm', () => {
     writer.writeBytes(new Uint8Array([0, 1, 0, 1])); // n mock
 
     const reader = new SshReader(writer.toUint8Array());
-    const parseMethod = rsaBinding.parseCertificatePublicKey;
+    const parseMethod = rsaBinding.parsePublicKey;
     expect(parseMethod).toBeDefined();
     if (!parseMethod) {
       throw new Error('parseCertificatePublicKey method not found');
@@ -42,20 +42,20 @@ describe('RSA Algorithm', () => {
 
   it('should encode and decode SSH signature correctly', () => {
     const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
-    expect(rsaBinding.encodeSshSignature).toBeDefined();
-    expect(rsaBinding.decodeSshSignature).toBeDefined();
+    expect(rsaBinding.encodeSignature).toBeDefined();
+    expect(rsaBinding.decodeSignature).toBeDefined();
 
     // Create mock RSA signature (DER format, simplified for test)
     const mockSignature = new Uint8Array([0x30, 0x06, 0x02, 0x01, 0x00, 0x02, 0x01, 0x01]);
 
     // Encode to SSH format
-    const sshSignature = rsaBinding.encodeSshSignature({
+    const sshSignature = rsaBinding.encodeSignature({
       signature: mockSignature,
       algo: 'rsa-sha2-256',
     });
 
     // Decode back
-    const decoded = rsaBinding.decodeSshSignature({
+    const decoded = rsaBinding.decodeSignature({
       signature: sshSignature,
     });
 

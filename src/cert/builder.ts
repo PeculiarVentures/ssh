@@ -208,7 +208,7 @@ export class SshCertificateBuilder {
       crypto,
     });
     const signatureAlgo = signatureKeyBinding.getSignatureAlgo();
-    const encodedSignature = signatureKeyBinding.encodeSshSignature({
+    const encodedSignature = signatureKeyBinding.encodeSignature({
       signature: new Uint8Array(signature),
       algo: signatureAlgo,
     });

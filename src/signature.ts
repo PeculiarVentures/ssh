@@ -174,7 +174,7 @@ export class SshSignature extends SshObject {
       sigWriter.writeBytes(this.signature);
       const wireFormatSignature = sigWriter.toUint8Array();
 
-      const decodedSig = binding.decodeSshSignature({
+      const decodedSig = binding.decodeSignature({
         signature: wireFormatSignature,
       });
       signatureToVerify = decodedSig.signature;
@@ -197,7 +197,7 @@ export class SshSignature extends SshObject {
    */
   static fromLegacy(algorithm: string, signature: Uint8Array): SshSignature {
     const binding = AlgorithmRegistry.get(algorithm);
-    const encodedSignature = binding.encodeSshSignature({
+    const encodedSignature = binding.encodeSignature({
       signature,
       algo: algorithm as SshSignatureAlgo,
     });
@@ -299,7 +299,7 @@ export class SshSignature extends SshObject {
       const dataToSign = writer.toUint8Array();
 
       const rawSignature = await privateKey.sign(signatureAlgorithm, dataToSign);
-      const encodedSignature = binding.encodeSshSignature({
+      const encodedSignature = binding.encodeSignature({
         signature: rawSignature,
         algo: signatureAlgorithm as SshSignatureAlgo,
       });

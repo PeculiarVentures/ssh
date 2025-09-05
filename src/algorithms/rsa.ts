@@ -33,7 +33,7 @@ export class RsaBinding implements AlgorithmBinding {
     this.hash = hash;
   }
 
-  async importPublicFromSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
+  async importPublicSsh(params: ImportPublicFromSshParams): Promise<CryptoKey> {
     const { blob, crypto } = params;
     const reader = new SshReader(blob);
 
@@ -65,7 +65,7 @@ export class RsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPublicToSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
+  async exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
     const jwk = await crypto.subtle.exportKey('jwk', publicKey);
 
@@ -74,8 +74,8 @@ export class RsaBinding implements AlgorithmBinding {
     }
 
     // Decode base64url
-    const n = Convert.FromBase64Url(jwk.n);
-    const e = Convert.FromBase64Url(jwk.e);
+    const n = BufferSourceConverter.toUint8Array(Convert.FromBase64Url(jwk.n));
+    const e = BufferSourceConverter.toUint8Array(Convert.FromBase64Url(jwk.e));
 
     const writer = new SshWriter();
     writer.writeString('ssh-rsa');
@@ -99,9 +99,10 @@ export class RsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<ArrayBuffer> {
+  async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    return crypto.subtle.exportKey('spki', publicKey);
+    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    return BufferSourceConverter.toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -118,12 +119,13 @@ export class RsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<ArrayBuffer> {
+  async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
-    return crypto.subtle.exportKey('pkcs8', privateKey);
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    return BufferSourceConverter.toUint8Array(pkcs8);
   }
 
-  async importPrivateFromSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
+  async importPrivateSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
@@ -133,7 +135,7 @@ export class RsaBinding implements AlgorithmBinding {
       .replace(/\s/g, '');
 
     const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(binaryData);
+    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
 
     // Check magic string
     const magic = reader.readBytes(15);
@@ -226,7 +228,7 @@ export class RsaBinding implements AlgorithmBinding {
     );
   }
 
-  async exportPrivateToSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
+  async exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
     const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to obtain all RSA parameters
@@ -256,7 +258,7 @@ export class RsaBinding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  async sign(params: SignParams): Promise<ArrayBuffer> {
+  async sign(params: SignParams): Promise<Uint8Array> {
     const { privateKey, data, crypto, hash } = params;
 
     // Validate hash parameter for RSA algorithms
@@ -272,11 +274,12 @@ export class RsaBinding implements AlgorithmBinding {
     const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
     const keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
 
-    return crypto.subtle.sign(
+    const signature = await crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
       keyToUse,
       BufferSourceConverter.toArrayBuffer(data),
     );
+    return BufferSourceConverter.toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {
@@ -303,7 +306,7 @@ export class RsaBinding implements AlgorithmBinding {
     );
   }
 
-  encodeSshSignature(params: EncodeSshSignatureParams): Uint8Array {
+  encodeSignature(params: EncodeSshSignatureParams): Uint8Array {
     const { signature, algo } = params;
     const writer = new SshWriter();
     writer.writeString(algo);
@@ -312,7 +315,7 @@ export class RsaBinding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
-  decodeSshSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
+  decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
     const reader = new SshReader(signature);
     const algo = reader.readString() as SshSignatureAlgo;
@@ -325,7 +328,7 @@ export class RsaBinding implements AlgorithmBinding {
     return cryptoKey.algorithm.name === 'RSASSA-PKCS1-v1_5';
   }
 
-  parseCertificatePublicKey(reader: SshReader): SshPublicKeyBlob {
+  parsePublicKey(reader: SshReader): SshPublicKeyBlob {
     // Read RSA public key components from certificate format
     const publicKeyExponent = reader.readBytes(reader.readUint32()); // e
     const publicKeyModulus = reader.readBytes(reader.readUint32()); // n
@@ -342,7 +345,7 @@ export class RsaBinding implements AlgorithmBinding {
     };
   }
 
-  writeCertificatePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
+  writePublicKey(writer: SshWriter, publicKey: SshPublicKeyBlob): void {
     // For RSA, extract e and n components
     const publicKeyReader = new SshReader(publicKey.keyData);
     publicKeyReader.readString(); // Skip "ssh-rsa"

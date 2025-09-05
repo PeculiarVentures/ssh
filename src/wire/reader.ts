@@ -1,13 +1,12 @@
 import { InvalidFormatError, UnexpectedEOFError } from '../errors.js';
-import type { ByteView } from '../types';
 import { decoder } from '../utils';
 
 export class SshReader {
   private buffer: Uint8Array;
   private offset: number;
 
-  constructor(data: ByteView) {
-    this.buffer = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+  constructor(data: Uint8Array) {
+    this.buffer = data;
     this.offset = 0;
   }
 

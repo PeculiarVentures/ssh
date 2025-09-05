@@ -1,22 +1,4 @@
 /**
- * Represents binary data that can be either ArrayBuffer or Uint8Array
- * Used throughout the library for handling binary key data and certificates
- */
-export type ByteView = ArrayBuffer | Uint8Array;
-
-/**
- * More strict type for binary data operations
- * Excludes ArrayBuffer to ensure we work with typed arrays
- */
-export type BinaryData = Uint8Array;
-
-/**
- * Type for raw binary key material (private keys, public keys, etc.)
- * Ensures consistent handling of key data throughout the library
- */
-export type KeyData = Uint8Array;
-
-/**
  * Generic dictionary type
  */
 export type Dict<T = unknown> = Record<string, T>;

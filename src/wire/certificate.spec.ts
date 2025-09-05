@@ -65,7 +65,7 @@ describe('parseCertificate', () => {
     const rsaCert = parseCertificate(testUserRsa);
     const rsaData = parseCertificateData(rsaCert.keyData);
     const rsaBinding = AlgorithmRegistry.get(rsaData.publicKey.type);
-    const rsaKey = await rsaBinding.importPublicFromSsh({
+    const rsaKey = await rsaBinding.importPublicSsh({
       blob: rsaData.publicKey.keyData,
       crypto,
     });
@@ -75,7 +75,7 @@ describe('parseCertificate', () => {
     const ed25519Cert = parseCertificate(testUserEd25519);
     const ed25519Data = parseCertificateData(ed25519Cert.keyData);
     const ed25519Binding = AlgorithmRegistry.get(ed25519Data.publicKey.type);
-    const ed25519Key = await ed25519Binding.importPublicFromSsh({
+    const ed25519Key = await ed25519Binding.importPublicSsh({
       blob: ed25519Data.publicKey.keyData,
       crypto,
     });
@@ -85,7 +85,7 @@ describe('parseCertificate', () => {
     const ecdsaCert = parseCertificate(testUserEcdsa);
     const ecdsaData = parseCertificateData(ecdsaCert.keyData);
     const ecdsaBinding = AlgorithmRegistry.get(ecdsaData.publicKey.type);
-    const ecdsaKey = await ecdsaBinding.importPublicFromSsh({
+    const ecdsaKey = await ecdsaBinding.importPublicSsh({
       blob: ecdsaData.publicKey.keyData,
       crypto,
     });

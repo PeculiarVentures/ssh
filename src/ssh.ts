@@ -2,11 +2,16 @@ import { Convert } from 'pvtsutils';
 import { SshCertificateBuilder } from './cert/builder';
 import { SshCertificate } from './cert/certificate';
 import { getCrypto } from './crypto';
-import { InvalidFormatError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from './errors';
+import {
+  InvalidFormatError,
+  SshError,
+  UnsupportedAlgorithmError,
+  UnsupportedKeyTypeError,
+} from './errors';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SshSignature } from './signature';
-import type { ByteView, SshKeyType, SshObject } from './types';
+import type { SshKeyType, SshObject } from './types';
 
 export interface ImportOptions {
   format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
@@ -50,7 +55,7 @@ export class SSH {
    * Import SSH key or certificate with automatic format detection
    */
   static async import(
-    data: string | ByteView,
+    data: string | Uint8Array,
     options: ImportOptions = {},
     crypto = getCrypto(),
   ): Promise<SshType> {
@@ -65,19 +70,19 @@ export class SSH {
     // Handle different formats
     switch (format) {
       case 'ssh':
-        return SSH.importSshFormat(data as string, type, crypto);
+        return SSH.importSshFormat(data as string, crypto);
 
       case 'pkcs8':
         if (!type) {
           throw new UnsupportedKeyTypeError('Key type must be specified for PKCS#8 import');
         }
-        return SshPrivateKey.fromPKCS8(data as ByteView, type, crypto);
+        return SshPrivateKey.fromPKCS8(data as Uint8Array, type, crypto);
 
       case 'spki':
         if (!type) {
           throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
         }
-        return SshPublicKey.fromSPKI(data as ByteView, type, crypto);
+        return SshPublicKey.fromSPKI(data as Uint8Array, type, crypto);
 
       case 'signature':
         return SSH.importSignature(data);
@@ -197,7 +202,7 @@ export class SSH {
   /**
    * Auto-detect format from data
    */
-  private static detectFormat(data: string | ByteView): 'ssh' | 'pkcs8' | 'spki' | 'signature' {
+  private static detectFormat(data: string | Uint8Array): 'ssh' | 'pkcs8' | 'spki' | 'signature' {
     if (typeof data === 'string') {
       const trimmed = data.trim();
 
@@ -235,27 +240,28 @@ export class SSH {
       if (/^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s/g, '')) && trimmed.length > 20) {
         return 'signature';
       }
-    }
 
-    // Binary data - assume PKCS#8 or SPKI based on content analysis
-    // This is a simplified heuristic
-    const buffer: Uint8Array =
-      data instanceof ArrayBuffer ? new Uint8Array(data) : (data as Uint8Array);
-    if (buffer.length < 4 || buffer[0] !== 0x30) {
-      return 'pkcs8'; // Fallback for invalid or too short data
-    }
-    // Parse SEQUENCE length (assume short form for simplicity)
-    let seqLen: number;
-    if (buffer[1] < 128) {
-      seqLen = buffer[1];
+      // Unknown string format
+      throw new SshError('Unable to detect string format');
     } else {
-      return 'pkcs8'; // Long form, fallback
+      // Binary data - assume PKCS#8 or SPKI based on content analysis
+      // This is a simplified heuristic
+      if (data.length < 4 || data[0] !== 0x30) {
+        return 'pkcs8'; // Fallback for invalid or too short data
+      }
+      // Parse SEQUENCE length (assume short form for simplicity)
+      let seqLen: number;
+      if (data[1] < 128) {
+        seqLen = data[1];
+      } else {
+        return 'pkcs8'; // Long form, fallback
+      }
+      if (2 + seqLen >= data.length) {
+        return 'pkcs8'; // Invalid length
+      }
+      const nextTag = data[2 + seqLen];
+      return nextTag === 0x02 ? 'pkcs8' : 'spki';
     }
-    if (2 + seqLen >= buffer.length) {
-      return 'pkcs8'; // Invalid length
-    }
-    const nextTag = buffer[2 + seqLen];
-    return nextTag === 0x02 ? 'pkcs8' : 'spki';
   }
 
   /**
@@ -263,7 +269,6 @@ export class SSH {
    */
   private static async importSshFormat(
     data: string,
-    type?: SshKeyType,
     crypto = getCrypto(),
   ): Promise<SshPrivateKey | SshPublicKey | SshCertificate> {
     const trimmed = data.trim();
@@ -289,7 +294,7 @@ export class SSH {
   /**
    * Import signature
    */
-  private static importSignature(data: string | ByteView): SshSignature {
+  private static importSignature(data: string | Uint8Array): SshSignature {
     if (typeof data === 'string') {
       const trimmed = data.trim();
       if (trimmed.startsWith('-----BEGIN SSH SIGNATURE-----')) {

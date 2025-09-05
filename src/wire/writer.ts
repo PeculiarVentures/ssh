@@ -1,5 +1,4 @@
 import { InvalidFormatError } from '../errors';
-import type { ByteView } from '../types';
 import { encoder } from '../utils';
 
 export class SshWriter {
@@ -54,11 +53,10 @@ export class SshWriter {
     this.writeUint32(low);
   }
 
-  writeBytes(data: ByteView): void {
-    const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-    this.ensureCapacity(bytes.length);
-    this.buffer.set(bytes, this.offset);
-    this.offset += bytes.length;
+  writeBytes(data: Uint8Array): void {
+    this.ensureCapacity(data.length);
+    this.buffer.set(data, this.offset);
+    this.offset += data.length;
   }
 
   writeString(value: string): void {
@@ -67,27 +65,25 @@ export class SshWriter {
     this.writeBytes(bytes);
   }
 
-  writeMpInt(value: ByteView, sshEncoding = false): void {
-    const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : value;
-
-    if (sshEncoding && bytes.length > 0 && (bytes[0] & 0x80) !== 0) {
+  writeMpInt(value: Uint8Array, sshEncoding = false): void {
+    if (sshEncoding && value.length > 0 && (value[0] & 0x80) !== 0) {
       // SSH wire protocol: if the high bit is set, prepend a zero byte
       // to ensure the number is interpreted as positive
-      const paddedBytes = new Uint8Array(bytes.length + 1);
+      const paddedBytes = new Uint8Array(value.length + 1);
       paddedBytes[0] = 0x00;
-      paddedBytes.set(bytes, 1);
+      paddedBytes.set(value, 1);
       this.writeUint32(paddedBytes.length);
       this.writeBytes(paddedBytes);
     } else {
-      this.writeUint32(bytes.length);
-      this.writeBytes(bytes);
+      this.writeUint32(value.length);
+      this.writeBytes(value);
     }
   }
 
   /**
    * @deprecated Use writeMpInt(value, true) instead
    */
-  writeMpIntSsh(value: ByteView): void {
+  writeMpIntSsh(value: Uint8Array): void {
     this.writeMpInt(value, true);
   }
 
