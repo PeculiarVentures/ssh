@@ -21,7 +21,7 @@ import type {
   SignParams,
   VerifyParams,
 } from '../registry';
-import type { SshSignatureAlgo } from '../types';
+import type { SshSignatureAlgorithm } from '../types';
 import type { SshPublicKeyBlob } from '../wire/public_key';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
@@ -314,7 +314,7 @@ export class RsaBinding implements AlgorithmBinding {
   decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
     const reader = new SshReader(signature);
-    const algo = reader.readString() as SshSignatureAlgo;
+    const algo = reader.readString() as SshSignatureAlgorithm;
     const sigLength = reader.readUint32();
     const sig = reader.readBytes(sigLength);
     return { signature: sig, algo };
@@ -357,7 +357,7 @@ export class RsaBinding implements AlgorithmBinding {
     return 'ssh-rsa-cert-v01@openssh.com';
   }
 
-  getSignatureAlgo(): SshSignatureAlgo {
+  getSignatureAlgo(): SshSignatureAlgorithm {
     return this.hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
   }
 }

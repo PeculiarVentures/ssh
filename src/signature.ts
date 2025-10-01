@@ -3,15 +3,10 @@ import { getCrypto } from './crypto';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { AlgorithmRegistry } from './registry';
-import type { SshKeyType, SshSignatureAlgo } from './types';
+import type { SshKeyType, SshSignatureAlgorithm, SshSignatureFormat } from './types';
 import { SshObject } from './types';
 import { SshReader } from './wire/reader';
-import {
-  parseSignature,
-  serializeSignature,
-  SshSignatureBlob,
-  SshSignatureFormat,
-} from './wire/signature';
+import { parseSignature, serializeSignature, SshSignatureBlob } from './wire/signature';
 import { SshWriter } from './wire/writer';
 
 export class SshSignature extends SshObject {
@@ -199,7 +194,7 @@ export class SshSignature extends SshObject {
     const binding = AlgorithmRegistry.get(algorithm);
     const encodedSignature = binding.encodeSignature({
       signature,
-      algo: algorithm as SshSignatureAlgo,
+      algo: algorithm as SshSignatureAlgorithm,
     });
     // Extract the signature data part
     const sigReader = new SshReader(encodedSignature);
@@ -249,7 +244,7 @@ export class SshSignature extends SshObject {
     privateKey: SshPrivateKey,
     data: Uint8Array,
     options: {
-      format?: 'legacy' | 'ssh-signature';
+      format?: SshSignatureFormat;
       namespace?: string;
     } = {},
   ): Promise<SshSignature> {
@@ -301,7 +296,7 @@ export class SshSignature extends SshObject {
       const rawSignature = await privateKey.sign(signatureAlgorithm, dataToSign);
       const encodedSignature = binding.encodeSignature({
         signature: rawSignature,
-        algo: signatureAlgorithm as SshSignatureAlgo,
+        algo: signatureAlgorithm as SshSignatureAlgorithm,
       });
 
       // For SSH SIGNATURE format, we need to extract just the signature data part

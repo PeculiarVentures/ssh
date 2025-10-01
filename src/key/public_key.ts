@@ -1,7 +1,7 @@
 import { getCrypto } from '../crypto';
 import { UnsupportedKeyTypeError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
-import type { SshKeyType } from '../types';
+import type { SshDigestAlgorithm, SshKeyType } from '../types';
 import { SshObject } from '../types';
 import {
   parsePublicKey as parseWirePublicKey,
@@ -168,7 +168,7 @@ export class SshPublicKey extends SshObject {
    * Compute thumbprint of the public key
    */
   async thumbprint(
-    algorithm: 'sha256' | 'sha512' = 'sha256',
+    algorithm: SshDigestAlgorithm = 'sha256',
     crypto = getCrypto(),
   ): Promise<Uint8Array> {
     const hashAlgorithm = algorithm === 'sha256' ? 'SHA-256' : 'SHA-512';

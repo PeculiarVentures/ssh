@@ -1,9 +1,6 @@
 // Crypto provider
 export { getCrypto, setCrypto } from './crypto';
 
-// Common types
-export type { Dict, SshKeyType, SshObject, SshSignatureAlgo } from './types';
-
 // Error classes
 export * from './errors';
 

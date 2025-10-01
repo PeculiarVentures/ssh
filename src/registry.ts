@@ -1,5 +1,5 @@
 import { UnsupportedKeyTypeError } from './errors.js';
-import type { SshSignatureAlgo } from './types';
+import type { SshSignatureAlgorithm } from './types';
 import type { SshPublicKeyBlob } from './wire/public_key';
 import { SshReader } from './wire/reader';
 import { SshWriter } from './wire/writer';
@@ -57,12 +57,12 @@ export interface VerifyParams extends CommonAlgorithmParams {
 
 export interface EncodeSshSignatureParams {
   signature: Uint8Array;
-  algo: SshSignatureAlgo;
+  algo: SshSignatureAlgorithm;
 }
 
 export interface DecodeSshSignatureResult {
   signature: Uint8Array;
-  algo: SshSignatureAlgo;
+  algo: SshSignatureAlgorithm;
 }
 
 export interface DecodeSshSignatureParams {
@@ -123,7 +123,7 @@ export interface AlgorithmBinding {
    * Get signature algorithm for this algorithm
    * @returns Signature algorithm string (e.g., 'ssh-ed25519', 'rsa-sha2-256')
    */
-  getSignatureAlgo(): SshSignatureAlgo;
+  getSignatureAlgo(): SshSignatureAlgorithm;
 }
 
 const registry = new Map<string, AlgorithmBinding>();

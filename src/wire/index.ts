@@ -12,4 +12,4 @@ export type { SshCertificateBlob } from './certificate';
 
 // Signature wire format
 export { parseSignature, serializeSignature } from './signature';
-export type { SshSignatureBlob, SshSignatureFormat } from './signature';
+export type { SshSignatureBlob } from './signature';

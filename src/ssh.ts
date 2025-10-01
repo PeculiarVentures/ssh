@@ -11,7 +11,13 @@ import {
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SshSignature } from './signature';
-import type { SshKeyType, SshObject } from './types';
+import type {
+  SshDigestAlgorithm,
+  SshKeyType,
+  SshObject,
+  SshSignatureFormat,
+  SshThumbprintFormat,
+} from './types';
 import { detectKeyType } from './utils';
 
 export interface ImportOptions {
@@ -372,7 +378,7 @@ export class SSH {
     privateKey: SshPrivateKey,
     data: Uint8Array,
     options: {
-      format?: 'legacy' | 'ssh-signature';
+      format?: SshSignatureFormat;
       namespace?: string;
     } = {},
   ): Promise<SshSignature> {
@@ -383,9 +389,9 @@ export class SSH {
    * Compute thumbprint of an SSH object
    */
   static async thumbprint(
-    algorithm: 'sha256' | 'sha512',
+    algorithm: SshDigestAlgorithm,
     object: SshObject,
-    format: 'hex' | 'base64' | 'ssh',
+    format: SshThumbprintFormat,
     crypto = getCrypto(),
   ): Promise<string> {
     let publicKey: SshPublicKey;

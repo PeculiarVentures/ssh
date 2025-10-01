@@ -27,13 +27,15 @@ export type SshKeyType =
  * SSH signature algorithms
  * Note: ssh-rsa is deprecated in favor of rsa-sha2-* variants
  */
-export type SshSignatureAlgo =
+export type SshSignatureAlgorithm =
   | 'ssh-ed25519'
   | 'rsa-sha2-256'
   | 'rsa-sha2-512'
   | 'ecdsa-sha2-nistp256'
   | 'ecdsa-sha2-nistp384'
   | 'ecdsa-sha2-nistp521';
+
+export type SshDigestAlgorithm = 'sha256' | 'sha512';
 
 /**
  * Export formats supported by the library
@@ -54,3 +56,9 @@ export abstract class SshObject {
   /** Export to SSH format */
   abstract toSSH(): Promise<string>;
 }
+
+export type SshCertificateType = 'user' | 'host';
+
+export type SshThumbprintFormat = 'hex' | 'base64' | 'ssh';
+
+export type SshSignatureFormat = 'legacy' | 'ssh-signature';

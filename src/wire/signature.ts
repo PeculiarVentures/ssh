@@ -1,8 +1,7 @@
 import { InvalidFormatError } from '../errors';
+import { SshSignatureFormat } from '../types';
 import { SshReader } from './reader';
 import { SshWriter } from './writer';
-
-export type SshSignatureFormat = 'legacy' | 'ssh-signature';
 
 export interface SshSignatureBlob {
   format: SshSignatureFormat;

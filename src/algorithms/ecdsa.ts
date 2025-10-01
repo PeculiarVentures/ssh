@@ -21,7 +21,7 @@ import type {
   SignParams,
   VerifyParams,
 } from '../registry';
-import type { SshSignatureAlgo } from '../types';
+import type { SshSignatureAlgorithm } from '../types';
 import type { SshPublicKeyBlob } from '../wire/public_key';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
@@ -388,7 +388,7 @@ export class EcdsaBinding implements AlgorithmBinding {
   decodeSignature(params: DecodeSshSignatureParams): DecodeSshSignatureResult {
     const { signature } = params;
     const reader = new SshReader(signature);
-    const algo = reader.readString() as SshSignatureAlgo;
+    const algo = reader.readString() as SshSignatureAlgorithm;
     const sigLength = reader.readUint32();
     const sig = reader.readBytes(sigLength);
 
@@ -475,8 +475,8 @@ export class EcdsaBinding implements AlgorithmBinding {
     return `${this.sshType}-cert-v01@openssh.com`;
   }
 
-  getSignatureAlgo(): SshSignatureAlgo {
-    return this.sshType as SshSignatureAlgo;
+  getSignatureAlgo(): SshSignatureAlgorithm {
+    return this.sshType as SshSignatureAlgorithm;
   }
 }
 

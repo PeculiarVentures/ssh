@@ -1,14 +1,14 @@
 import { getCrypto } from '../crypto';
 import { SshPublicKey } from '../key/public_key';
 import { AlgorithmRegistry } from '../registry';
-import type { SshKeyType } from '../types';
+import type { SshCertificateType, SshKeyType, SshSignatureAlgorithm } from '../types';
 import { createCertificateData } from '../wire/certificate';
 import { SshCertificate } from './certificate';
 
 export interface SshCertificateInit {
   publicKey: SshPublicKey;
   serial?: bigint;
-  type?: 'user' | 'host';
+  type?: SshCertificateType;
   keyId?: string;
   validPrincipals?: string[];
   validAfter?: bigint;
@@ -21,19 +21,13 @@ export interface SshCertificateSignOptions {
   signatureKey: SshPublicKey;
   privateKey: CryptoKey;
   crypto?: Crypto;
-  signatureAlgorithm?:
-    | 'rsa-sha2-256'
-    | 'rsa-sha2-512'
-    | 'ecdsa-sha2-nistp256'
-    | 'ecdsa-sha2-nistp384'
-    | 'ecdsa-sha2-nistp521'
-    | 'ssh-ed25519';
+  signatureAlgorithm?: SshSignatureAlgorithm;
 }
 
 export class SshCertificateBuilder {
   private publicKey: SshPublicKey;
   private serial = 0n;
-  private type: 'user' | 'host' = 'user';
+  private type: SshCertificateType = 'user';
   private keyId = '';
   private validPrincipals: string[] = [];
   private validAfter = 0n;

@@ -20,7 +20,7 @@ import type {
   SignParams,
   VerifyParams,
 } from '../registry';
-import type { SshSignatureAlgo } from '../types';
+import type { SshSignatureAlgorithm } from '../types';
 import type { SshPublicKeyBlob } from '../wire/public_key';
 import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
@@ -231,7 +231,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { signature } = params;
 
     const reader = new SshReader(signature);
-    const algo = reader.readString() as SshSignatureAlgo;
+    const algo = reader.readString() as SshSignatureAlgorithm;
     // Read the length field and then the actual signature
     const sigLength = reader.readUint32();
     const sigBytes = reader.readBytes(sigLength);
@@ -276,7 +276,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     return 'ssh-ed25519-cert-v01@openssh.com';
   }
 
-  getSignatureAlgo(): SshSignatureAlgo {
+  getSignatureAlgo(): SshSignatureAlgorithm {
     return 'ssh-ed25519';
   }
 }
