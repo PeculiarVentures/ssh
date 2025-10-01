@@ -259,4 +259,111 @@ describe('SshCertificateBuilder', () => {
     const isValidRoundTrip = await certFromText.verify(caPublicKey);
     expect(isValidRoundTrip).toBe(true);
   });
+
+  it('should build certificate with Date objects for validity', async () => {
+    // Generate test keys
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const caKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    // Create public keys
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+    const caPublicKey = await SshPublicKey.fromWebCrypto(caKeyPair.publicKey);
+
+    // Create certificate builder with Date objects
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-date-cert',
+      validPrincipals: ['user@example.com'],
+      validAfter: now,
+      validBefore: tomorrow,
+    });
+
+    // Sign certificate
+    const certificate = await builder.sign({
+      signatureKey: caPublicKey,
+      privateKey: caKeyPair.privateKey,
+    });
+
+    expect(certificate).toBeInstanceOf(SshCertificate);
+    expect(certificate.keyId).toBe('test-date-cert');
+    expect(certificate.principals).toEqual(['user@example.com']);
+
+    // Check that the certificate is valid now
+    expect(certificate.validate()).toBe(true);
+
+    // Verify signature
+    const isValid = await certificate.verify(caPublicKey);
+    expect(isValid).toBe(true);
+  });
+
+  it('should support setValidity with Date objects', async () => {
+    // Generate test keys
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const caKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    // Create public keys
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+    const caPublicKey = await SshPublicKey.fromWebCrypto(caKeyPair.publicKey);
+
+    // Create certificate builder
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-setvalidity-date-cert',
+      validPrincipals: ['user@example.com'],
+    });
+
+    // Set validity using Date objects
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    builder.setValidity(now, tomorrow);
+
+    // Sign certificate
+    const certificate = await builder.sign({
+      signatureKey: caPublicKey,
+      privateKey: caKeyPair.privateKey,
+    });
+
+    expect(certificate).toBeInstanceOf(SshCertificate);
+    expect(certificate.keyId).toBe('test-setvalidity-date-cert');
+
+    // Check that the certificate is valid now
+    expect(certificate.validate()).toBe(true);
+
+    // Verify signature
+    const isValid = await certificate.verify(caPublicKey);
+    expect(isValid).toBe(true);
+  });
 });

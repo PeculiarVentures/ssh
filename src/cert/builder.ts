@@ -11,8 +11,8 @@ export interface SshCertificateInit {
   type?: SshCertificateType;
   keyId?: string;
   validPrincipals?: string[];
-  validAfter?: bigint;
-  validBefore?: bigint;
+  validAfter?: bigint | number | Date;
+  validBefore?: bigint | number | Date;
   criticalOptions?: Record<string, string>;
   extensions?: Record<string, string>;
 }
@@ -42,10 +42,20 @@ export class SshCertificateBuilder {
     if (init.type !== undefined) this.type = init.type;
     if (init.keyId !== undefined) this.keyId = init.keyId;
     if (init.validPrincipals !== undefined) this.validPrincipals = [...init.validPrincipals];
-    if (init.validAfter !== undefined) this.validAfter = init.validAfter;
-    if (init.validBefore !== undefined) this.validBefore = init.validBefore;
+    if (init.validAfter !== undefined) this.validAfter = this.toBigIntTimestamp(init.validAfter);
+    if (init.validBefore !== undefined) this.validBefore = this.toBigIntTimestamp(init.validBefore);
     if (init.criticalOptions !== undefined) this.criticalOptions = { ...init.criticalOptions };
     if (init.extensions !== undefined) this.extensions = { ...init.extensions };
+  }
+
+  private toBigIntTimestamp(value: bigint | number | Date): bigint {
+    if (value instanceof Date) {
+      return BigInt(Math.floor(value.getTime() / 1000));
+    } else if (typeof value === 'number') {
+      return BigInt(value);
+    } else {
+      return value;
+    }
   }
 
   /**
@@ -91,9 +101,9 @@ export class SshCertificateBuilder {
   /**
    * Set validity period
    */
-  setValidity(after: bigint | number, before: bigint | number): this {
-    this.validAfter = typeof after === 'number' ? BigInt(after) : after;
-    this.validBefore = typeof before === 'number' ? BigInt(before) : before;
+  setValidity(after: bigint | number | Date, before: bigint | number | Date): this {
+    this.validAfter = this.toBigIntTimestamp(after);
+    this.validBefore = this.toBigIntTimestamp(before);
     return this;
   }
 
