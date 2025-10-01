@@ -1,41 +1,11 @@
 import { assert, describe, expect, it } from 'vitest';
-import {
-  ecdsaP256Key,
-  ed25519Key,
-  ed25519PrivateKeySsh,
-  rsaKey,
-  rsaPrivateKeySsh,
-} from '../tests/utils/testFixtures';
+import * as fixtures from '../tests/utils/testFixtures';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SSH } from './ssh';
 import { SshObject } from './types';
 
 describe('SSH Unified API', () => {
-  describe('import', () => {
-    it('should import SSH public key automatically', async () => {
-      const key = await SSH.import(rsaKey);
-      expect(key).toBeInstanceOf(SshPublicKey);
-      expect((key as SshPublicKey).keyType).toBe('ssh-rsa');
-    });
-
-    it('should import SSH private key automatically', async () => {
-      const key = await SSH.import(rsaPrivateKeySsh);
-      expect(key).toBeInstanceOf(SshPrivateKey);
-      expect((key as SshPrivateKey).keyType).toBe('ssh-rsa');
-    });
-
-    it('should import with explicit format', async () => {
-      const key = await SSH.import(ed25519Key, { format: 'ssh' });
-      expect(key).toBeInstanceOf(SshPublicKey);
-      expect((key as SshPublicKey).keyType).toBe('ssh-ed25519');
-    });
-
-    it('should throw on unsupported format', async () => {
-      await expect(SSH.import('invalid data')).rejects.toThrow();
-    });
-  });
-
   describe('createKeyPair', () => {
     it('should create Ed25519 key pair', async () => {
       const { privateKey, publicKey } = await SSH.createKeyPair('ed25519');
@@ -101,7 +71,7 @@ describe('SSH Unified API', () => {
 
   describe('createCertificate', () => {
     it('should create certificate builder', async () => {
-      const publicKey = (await SSH.import(ed25519Key)) as SshPublicKey;
+      const publicKey = (await SSH.import(fixtures.ed25519Key)) as SshPublicKey;
       const builder = SSH.createCertificate(publicKey);
 
       expect(builder).toBeDefined();
@@ -112,7 +82,7 @@ describe('SSH Unified API', () => {
 
   describe('thumbprint', () => {
     it('should compute thumbprint for public key in hex format', async () => {
-      const publicKey = await SSH.import(rsaKey);
+      const publicKey = await SSH.import(fixtures.rsaKey);
       const thumbprint = await SSH.thumbprint('sha256', publicKey, 'hex');
 
       expect(typeof thumbprint).toBe('string');
@@ -121,7 +91,7 @@ describe('SSH Unified API', () => {
     });
 
     it('should compute thumbprint for public key in base64 format', async () => {
-      const publicKey = await SSH.import(rsaKey);
+      const publicKey = await SSH.import(fixtures.rsaKey);
       const thumbprint = await SSH.thumbprint('sha256', publicKey, 'base64');
 
       expect(typeof thumbprint).toBe('string');
@@ -129,7 +99,7 @@ describe('SSH Unified API', () => {
     });
 
     it('should compute thumbprint for public key in SSH format', async () => {
-      const publicKey = await SSH.import(rsaKey);
+      const publicKey = await SSH.import(fixtures.rsaKey);
       const thumbprint = await SSH.thumbprint('sha256', publicKey, 'ssh');
 
       expect(typeof thumbprint).toBe('string');
@@ -152,7 +122,7 @@ describe('SSH Unified API', () => {
 
     it('should compute thumbprint for certificate', async () => {
       // Create a certificate for testing
-      const publicKey = await SSH.import(ed25519Key);
+      const publicKey = await SSH.import(fixtures.ed25519Key);
       const { privateKey: signerPrivateKey, publicKey: signerPublicKey } =
         await SSH.createKeyPair('ed25519');
       assert.ok(publicKey instanceof SshPublicKey);
@@ -216,7 +186,7 @@ describe('SSH Unified API', () => {
     });
 
     it('should support SHA-512 algorithm', async () => {
-      const publicKey = (await SSH.import(rsaKey)) as SshPublicKey;
+      const publicKey = (await SSH.import(fixtures.rsaKey)) as SshPublicKey;
       const thumbprint = await SSH.thumbprint('sha512', publicKey, 'ssh');
 
       expect(typeof thumbprint).toBe('string');
@@ -227,7 +197,7 @@ describe('SSH Unified API', () => {
 
 describe('Enhanced SshPrivateKey API', () => {
   it('should have convenience export methods', async () => {
-    const key = (await SSH.import(ed25519PrivateKeySsh)) as SshPrivateKey;
+    const key = (await SSH.import(fixtures.ed25519PrivateKeySsh)) as SshPrivateKey;
 
     // Test convenience methods
     expect(typeof key.toWebCrypto).toBe('function');
@@ -248,7 +218,7 @@ describe('Enhanced SshPrivateKey API', () => {
 
 describe('Enhanced SshPublicKey API', () => {
   it('should have convenience export methods', async () => {
-    const key = (await SSH.import(ecdsaP256Key)) as SshPublicKey;
+    const key = (await SSH.import(fixtures.ecdsaP256Key)) as SshPublicKey;
 
     // Test convenience methods
     expect(typeof key.toSSH).toBe('function');

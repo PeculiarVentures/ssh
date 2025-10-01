@@ -12,6 +12,7 @@ import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
 import { SshSignature } from './signature';
 import type { SshKeyType, SshObject } from './types';
+import { detectKeyType } from './utils';
 
 export interface ImportOptions {
   format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
@@ -72,17 +73,61 @@ export class SSH {
       case 'ssh':
         return SSH.importSshFormat(data as string, crypto);
 
-      case 'pkcs8':
-        if (!type) {
+      case 'pkcs8': {
+        // Try to auto-detect type from PKCS#8 data if not provided
+        let keyType = type;
+        if (!keyType && data instanceof Uint8Array) {
+          // Import as binary PKCS#8
+          const detectedType = detectKeyType(data);
+          if (detectedType) {
+            keyType = detectedType;
+          }
+        } else if (!keyType && typeof data === 'string') {
+          // Convert PEM to DER and detect
+          const derData = SSH.pemToDer(data);
+          const detectedType = detectKeyType(derData);
+          if (detectedType) {
+            keyType = detectedType;
+          }
+        }
+
+        if (!keyType) {
           throw new UnsupportedKeyTypeError('Key type must be specified for PKCS#8 import');
         }
-        return SshPrivateKey.fromPKCS8(data as Uint8Array, type, crypto);
+        return SshPrivateKey.fromPKCS8(
+          typeof data === 'string' ? SSH.pemToDer(data) : data,
+          keyType,
+          crypto,
+        );
+      }
 
-      case 'spki':
-        if (!type) {
+      case 'spki': {
+        // Try to auto-detect type from SPKI data if not provided
+        let keyType = type;
+        if (!keyType && data instanceof Uint8Array) {
+          // Import as binary SPKI
+          const detectedType = detectKeyType(data);
+          if (detectedType) {
+            keyType = detectedType;
+          }
+        } else if (!keyType && typeof data === 'string') {
+          // Convert PEM to DER and detect
+          const derData = SSH.pemToDer(data);
+          const detectedType = detectKeyType(derData);
+          if (detectedType) {
+            keyType = detectedType;
+          }
+        }
+
+        if (!keyType) {
           throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
         }
-        return SshPublicKey.fromSPKI(data as Uint8Array, type, crypto);
+        return SshPublicKey.fromSPKI(
+          typeof data === 'string' ? SSH.pemToDer(data) : data,
+          keyType,
+          crypto,
+        );
+      }
 
       case 'signature':
         return SSH.importSignature(data);
@@ -197,6 +242,17 @@ export class SSH {
    */
   static createCertificate(publicKey: SshPublicKey): SshCertificateBuilder {
     return new SshCertificateBuilder({ publicKey });
+  }
+
+  /**
+   * Convert PEM to DER format
+   */
+  private static pemToDer(pem: string): Uint8Array {
+    const base64 = pem
+      .replace(/-----BEGIN [^-]+-----/, '')
+      .replace(/-----END [^-]+-----/, '')
+      .replace(/\s/g, '');
+    return new Uint8Array(Convert.FromBase64(base64));
   }
 
   /**
