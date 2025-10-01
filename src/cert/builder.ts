@@ -5,14 +5,16 @@ import type { SshCertificateType, SshKeyType, SshSignatureAlgorithm } from '../t
 import { createCertificateData } from '../wire/certificate';
 import { SshCertificate } from './certificate';
 
+export type SshValidityInput = bigint | number | Date;
+
 export interface SshCertificateInit {
   publicKey: SshPublicKey;
   serial?: bigint;
   type?: SshCertificateType;
   keyId?: string;
   validPrincipals?: string[];
-  validAfter?: bigint | number | Date;
-  validBefore?: bigint | number | Date;
+  validAfter?: SshValidityInput;
+  validBefore?: SshValidityInput;
   criticalOptions?: Record<string, string>;
   extensions?: Record<string, string>;
 }
@@ -48,7 +50,7 @@ export class SshCertificateBuilder {
     if (init.extensions !== undefined) this.extensions = { ...init.extensions };
   }
 
-  private toBigIntTimestamp(value: bigint | number | Date): bigint {
+  private toBigIntTimestamp(value: SshValidityInput): bigint {
     if (value instanceof Date) {
       return BigInt(Math.floor(value.getTime() / 1000));
     } else if (typeof value === 'number') {
@@ -67,9 +69,22 @@ export class SshCertificateBuilder {
   }
 
   /**
+   * Set random certificate serial number
+   */
+  setSerialRandom(bytes: number): this {
+    const randomBytes = crypto.getRandomValues(new Uint8Array(bytes));
+    let serial = 0n;
+    for (const byte of randomBytes) {
+      serial = (serial << 8n) | BigInt(byte);
+    }
+    this.serial = serial;
+    return this;
+  }
+
+  /**
    * Set certificate type
    */
-  setType(type: 'user' | 'host'): this {
+  setType(type: SshCertificateType): this {
     this.type = type;
     return this;
   }
@@ -101,7 +116,7 @@ export class SshCertificateBuilder {
   /**
    * Set validity period
    */
-  setValidity(after: bigint | number | Date, before: bigint | number | Date): this {
+  setValidity(after: SshValidityInput, before: SshValidityInput): this {
     this.validAfter = this.toBigIntTimestamp(after);
     this.validBefore = this.toBigIntTimestamp(before);
     return this;
@@ -136,6 +151,20 @@ export class SshCertificateBuilder {
    */
   addExtension(name: string, value: string): this {
     this.extensions[name] = value;
+    return this;
+  }
+
+  /**
+   * Set default extensions for user certificates
+   */
+  setExtensionsDefault(): this {
+    this.extensions = {
+      'permit-X11-forwarding': '',
+      'permit-agent-forwarding': '',
+      'permit-port-forwarding': '',
+      'permit-pty': '',
+      'permit-user-rc': '',
+    };
     return this;
   }
 

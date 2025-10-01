@@ -366,4 +366,63 @@ describe('SshCertificateBuilder', () => {
     const isValid = await certificate.verify(caPublicKey);
     expect(isValid).toBe(true);
   });
+
+  it('should set random serial number', async () => {
+    // Generate test key
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-random-serial',
+      validPrincipals: ['user@example.com'],
+    });
+
+    // Set random serial
+    builder.setSerialRandom(8);
+
+    // Check that serial is set and is a bigint
+    expect(typeof builder['serial']).toBe('bigint');
+    expect(builder['serial']).not.toBe(0n); // Should not be default 0
+  });
+
+  it('should set default extensions', async () => {
+    // Generate test key
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'Ed25519',
+        namedCurve: 'Ed25519',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-default-extensions',
+      validPrincipals: ['user@example.com'],
+    });
+
+    // Set default extensions
+    builder.setExtensionsDefault();
+
+    // Check that default extensions are set
+    expect(builder['extensions']).toEqual({
+      'permit-X11-forwarding': '',
+      'permit-agent-forwarding': '',
+      'permit-port-forwarding': '',
+      'permit-pty': '',
+      'permit-user-rc': '',
+    });
+  });
 });
