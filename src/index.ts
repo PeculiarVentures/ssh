@@ -21,3 +21,6 @@ export { SshSignature } from './signature';
 
 // Unified SSH API
 export { SSH, type ImportOptions, type KeyPairResult, type SshType } from './ssh';
+
+// Types
+export * from './types';
