@@ -31,7 +31,7 @@ export default [
       typescript({
         compilerOptions: {
           module: 'esnext',
-          moduleResolution: 'node',
+          moduleResolution: 'bundler',
           target: 'es2022',
           removeComments: true,
           declaration: false
