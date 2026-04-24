@@ -27,9 +27,9 @@ import { SshReader } from '../wire/reader';
 import { SshWriter } from '../wire/writer';
 
 export class RsaBinding implements AlgorithmBinding {
-  private hash = 'SHA-256';
+  private readonly hash: 'SHA-256' | 'SHA-512';
 
-  constructor(hash = 'SHA-256') {
+  constructor(hash: 'SHA-256' | 'SHA-512' = 'SHA-256') {
     this.hash = hash;
   }
 
@@ -258,21 +258,45 @@ export class RsaBinding implements AlgorithmBinding {
     return writer.toUint8Array();
   }
 
+  private getKeyHashName(key: CryptoKey): string | undefined {
+    const algorithm = key.algorithm as Partial<RsaHashedKeyAlgorithm>;
+    return algorithm.hash?.name;
+  }
+
+  private requiresReimport(key: CryptoKey): boolean {
+    const keyHash = this.getKeyHashName(key);
+    return keyHash !== undefined && keyHash !== this.hash;
+  }
+
+  private createHashMismatchError(
+    keyType: 'private' | 'public',
+    key: CryptoKey,
+  ): InvalidKeyDataError {
+    const keyHash = this.getKeyHashName(key) ?? 'an unknown hash';
+    return new InvalidKeyDataError(
+      `RSA ${keyType} key uses ${keyHash} but ${this.getSignatureAlgo()} requires ${this.hash}. The key is not extractable, so it cannot be re-imported with ${this.hash}.`,
+    );
+  }
+
   async sign(params: SignParams): Promise<Uint8Array> {
     const { privateKey, data, crypto, hash } = params;
 
     // Validate hash parameter for RSA algorithms
     if (hash && hash !== this.hash) {
-      throw new InvalidKeyDataError(`Hash ${hash} not supported for this RSA algorithm`);
+      throw new InvalidKeyDataError(
+        `Hash ${hash} not supported for ${this.getSignatureAlgo()}; expected ${this.hash}`,
+      );
     }
 
-    if (!privateKey.extractable) {
-      throw new InvalidKeyDataError('Private key is not extractable');
-    }
+    let keyToUse = privateKey;
+    if (this.requiresReimport(privateKey)) {
+      if (!privateKey.extractable) {
+        throw this.createHashMismatchError('private', privateKey);
+      }
 
-    // Re-import the key with the correct hash
-    const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
-    const keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
+      const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
+      keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
+    }
 
     const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyToUse, data as BufferSource);
     return BufferSourceConverter.toUint8Array(signature);
@@ -286,13 +310,15 @@ export class RsaBinding implements AlgorithmBinding {
       return false;
     }
 
-    if (!publicKey.extractable) {
-      throw new InvalidKeyDataError('Public key is not extractable');
-    }
+    let keyToUse = publicKey;
+    if (this.requiresReimport(publicKey)) {
+      if (!publicKey.extractable) {
+        throw this.createHashMismatchError('public', publicKey);
+      }
 
-    // Re-import the key with the correct hash
-    const spki = await this.exportPublicSpki({ publicKey, crypto });
-    const keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
+      const spki = await this.exportPublicSpki({ publicKey, crypto });
+      keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
+    }
 
     return crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',

@@ -1,10 +1,51 @@
 import { describe, expect, it } from 'vitest';
-import { InvalidKeyDataError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import { SshReader, SshWriter } from '../wire';
 
 describe('RSA Algorithm', () => {
   const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
+  const rsaSha512Binding = AlgorithmRegistry.get('rsa-sha2-512');
+
+  async function generateRsaKeyPair(hash: 'SHA-256' | 'SHA-512' = 'SHA-256') {
+    return globalThis.crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash,
+      },
+      true,
+      ['sign', 'verify'],
+    );
+  }
+
+  async function toNonExtractablePrivateKey(privateKey: CryptoKey, crypto: Crypto) {
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    return crypto.subtle.importKey(
+      'pkcs8',
+      pkcs8,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256',
+      },
+      false,
+      ['sign'],
+    );
+  }
+
+  async function toNonExtractablePublicKey(publicKey: CryptoKey, crypto: Crypto) {
+    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    return crypto.subtle.importKey(
+      'spki',
+      spki,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256',
+      },
+      false,
+      ['verify'],
+    );
+  }
 
   it('should be registered', () => {
     expect(rsaBinding).toBeDefined();
@@ -63,81 +104,100 @@ describe('RSA Algorithm', () => {
     expect(rsaBinding.getCertificateType?.()).toBe('ssh-rsa-cert-v01@openssh.com');
   });
 
-  it('should throw error for non-extractable private key in sign', async () => {
-    const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
+  it('should sign with a non-extractable private key when the key hash already matches', async () => {
     const crypto = globalThis.crypto;
-
-    // Create a non-extractable private key
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true, // extractable: true for public, but we need private
-      ['sign', 'verify'],
-    );
-
-    // Make private key non-extractable by re-importing
-    const pkcs8 = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-    const nonExtractablePrivateKey = await crypto.subtle.importKey(
-      'pkcs8',
-      pkcs8,
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
-      },
-      false, // extractable: false
-      ['sign'],
-    );
+    const keyPair = await generateRsaKeyPair('SHA-256');
+    const nonExtractablePrivateKey = await toNonExtractablePrivateKey(keyPair.privateKey, crypto);
 
     const testData = new Uint8Array([1, 2, 3]);
-
-    await expect(
-      rsaBinding.sign({ privateKey: nonExtractablePrivateKey, data: testData, crypto }),
-    ).rejects.toThrow(InvalidKeyDataError);
-  });
-
-  it('should throw error for non-extractable public key in verify', async () => {
-    const rsaBinding = AlgorithmRegistry.get('ssh-rsa');
-    const crypto = globalThis.crypto;
-
-    // Create a non-extractable public key
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-
-    // Make public key non-extractable by re-importing
-    const spki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-    const nonExtractablePublicKey = await crypto.subtle.importKey(
-      'spki',
-      spki,
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
-      },
-      false, // extractable: false
-      ['verify'],
-    );
-
-    const testData = new Uint8Array([1, 2, 3]);
-    const signature = new Uint8Array(256); // dummy signature
+    const signature = await rsaBinding.sign({
+      privateKey: nonExtractablePrivateKey,
+      data: testData,
+      crypto,
+    });
 
     await expect(
       rsaBinding.verify({
+        publicKey: keyPair.publicKey,
+        signature,
+        data: testData,
+        crypto,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('should verify with a non-extractable public key when the key hash already matches', async () => {
+    const crypto = globalThis.crypto;
+    const keyPair = await generateRsaKeyPair('SHA-256');
+    const nonExtractablePublicKey = await toNonExtractablePublicKey(keyPair.publicKey, crypto);
+
+    const testData = new Uint8Array([1, 2, 3]);
+    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyPair.privateKey, testData);
+
+    await expect(
+      rsaBinding.verify({
+        publicKey: nonExtractablePublicKey,
+        signature: new Uint8Array(signature),
+        data: testData,
+        crypto,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('should re-import an extractable private key when switching RSA hash algorithms', async () => {
+    const crypto = globalThis.crypto;
+    const keyPair = await generateRsaKeyPair('SHA-256');
+    const testData = new Uint8Array([1, 2, 3, 4]);
+
+    const signature = await rsaSha512Binding.sign({
+      privateKey: keyPair.privateKey,
+      data: testData,
+      crypto,
+    });
+
+    await expect(
+      rsaSha512Binding.verify({
+        publicKey: keyPair.publicKey,
+        signature,
+        data: testData,
+        crypto,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('should throw an informative error for non-extractable private keys when RSA hash re-import is required', async () => {
+    const crypto = globalThis.crypto;
+    const keyPair = await generateRsaKeyPair('SHA-256');
+    const nonExtractablePrivateKey = await toNonExtractablePrivateKey(keyPair.privateKey, crypto);
+    const testData = new Uint8Array([1, 2, 3]);
+
+    await expect(
+      rsaSha512Binding.sign({ privateKey: nonExtractablePrivateKey, data: testData, crypto }),
+    ).rejects.toThrow(
+      'Invalid key data: RSA private key uses SHA-256 but rsa-sha2-512 requires SHA-512. The key is not extractable, so it cannot be re-imported with SHA-512.',
+    );
+  });
+
+  it('should throw an informative error for non-extractable public keys when RSA hash re-import is required', async () => {
+    const crypto = globalThis.crypto;
+    const keyPair = await generateRsaKeyPair('SHA-256');
+    const nonExtractablePublicKey = await toNonExtractablePublicKey(keyPair.publicKey, crypto);
+    const testData = new Uint8Array([1, 2, 3]);
+    const signature = await rsaSha512Binding.sign({
+      privateKey: keyPair.privateKey,
+      data: testData,
+      crypto,
+    });
+
+    await expect(
+      rsaSha512Binding.verify({
         publicKey: nonExtractablePublicKey,
         signature,
         data: testData,
         crypto,
       }),
-    ).rejects.toThrow(InvalidKeyDataError);
+    ).rejects.toThrow(
+      'Invalid key data: RSA public key uses SHA-256 but rsa-sha2-512 requires SHA-512. The key is not extractable, so it cannot be re-imported with SHA-512.',
+    );
   });
 });
