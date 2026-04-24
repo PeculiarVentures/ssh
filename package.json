@@ -20,7 +20,10 @@
     "Miroshin Stepan <microshine@mail.ru>"
   ],
   "license": "MIT",
-  "repository": "https://github.com/PeculiarVentures/ssh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PeculiarVentures/ssh"
+  },
   "bugs": {
     "url": "https://github.com/PeculiarVentures/ssh/issues"
   },
