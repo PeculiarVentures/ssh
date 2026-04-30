@@ -1,4 +1,6 @@
-import { BufferSourceConverter, Convert } from 'pvtsutils';
+import { toUint8Array } from '@peculiar/utils/bytes';
+import { base64url, hex } from '@peculiar/utils/encoding';
+import * as pem from '@peculiar/utils/pem';
 
 import {
   EncryptedKeyNotSupportedError,
@@ -98,8 +100,8 @@ export class EcdsaBinding implements AlgorithmBinding {
     const jwk = {
       kty: 'EC' as const,
       crv: this.namedCurve,
-      x: Convert.ToBase64Url(q.slice(1, 1 + coordLength)), // x coordinate
-      y: Convert.ToBase64Url(q.slice(1 + coordLength)), // y coordinate
+      x: base64url.encode(q.slice(1, 1 + coordLength)), // x coordinate
+      y: base64url.encode(q.slice(1 + coordLength)), // y coordinate
     };
 
     return crypto.subtle.importKey(
@@ -123,8 +125,8 @@ export class EcdsaBinding implements AlgorithmBinding {
     }
 
     // Decode base64url
-    const x = new Uint8Array(Convert.FromBase64Url(jwk.x));
-    const y = new Uint8Array(Convert.FromBase64Url(jwk.y));
+    const x = base64url.decode(jwk.x);
+    const y = base64url.decode(jwk.y);
 
     // Create uncompressed point (0x04 + x + y)
     const q = new Uint8Array(1 + x.length + y.length);
@@ -157,7 +159,7 @@ export class EcdsaBinding implements AlgorithmBinding {
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
     const spki = await crypto.subtle.exportKey('spki', publicKey);
-    return BufferSourceConverter.toUint8Array(spki);
+    return toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -177,7 +179,7 @@ export class EcdsaBinding implements AlgorithmBinding {
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
     const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
-    return BufferSourceConverter.toUint8Array(pkcs8);
+    return toUint8Array(pkcs8);
   }
 
   async exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
@@ -190,9 +192,9 @@ export class EcdsaBinding implements AlgorithmBinding {
     }
 
     // Decode coordinates
-    const x = new Uint8Array(Convert.FromBase64Url(jwk.x));
-    const y = new Uint8Array(Convert.FromBase64Url(jwk.y));
-    const d = new Uint8Array(Convert.FromBase64Url(jwk.d));
+    const x = base64url.decode(jwk.x);
+    const y = base64url.decode(jwk.y);
+    const d = base64url.decode(jwk.d);
 
     // Create uncompressed public key point (0x04 + x + y)
     const publicPoint = new Uint8Array(1 + x.length + y.length);
@@ -214,17 +216,12 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
-    const base64Data = sshKey
-      .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
-      .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
-      .replace(/\s/g, '');
-
-    const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
+    const raw = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+    const reader = new SshReader(raw);
 
     // Check magic string
     const magic = reader.readBytes(15);
-    if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
+    if (hex.encode(magic) !== '6f70656e7373682d6b65792d763100') {
       throw new InvalidPrivateKeyFormatError('invalid magic string');
     }
 
@@ -289,9 +286,9 @@ export class EcdsaBinding implements AlgorithmBinding {
     const jwk = {
       kty: 'EC' as const,
       crv: this.namedCurve,
-      x: Convert.ToBase64Url(x),
-      y: Convert.ToBase64Url(y),
-      d: Convert.ToBase64Url(privateKeyValue),
+      x: base64url.encode(x),
+      y: base64url.encode(y),
+      d: base64url.encode(privateKeyValue),
     };
 
     return crypto.subtle.importKey(
@@ -327,7 +324,7 @@ export class EcdsaBinding implements AlgorithmBinding {
       privateKey,
       data as BufferSource,
     );
-    return BufferSourceConverter.toUint8Array(signature);
+    return toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {

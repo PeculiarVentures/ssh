@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { base64 as base64Codec } from '@peculiar/utils/encoding';
 import { InvalidFormatError, UnsupportedAlgorithmError } from '../errors';
 import { AlgorithmRegistry } from '../registry';
 import type { SshKeyType } from '../types';
@@ -38,7 +38,7 @@ export function parse(input: Uint8Array | string): SshCertificateBlob {
     }
 
     const type = parts[0] as SshKeyType;
-    const blob = new Uint8Array(Convert.FromBase64(parts[1]));
+    const blob = base64Codec.decode(parts[1]);
     const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
 
     // Validate blob
@@ -194,7 +194,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 }
 
 export function serialize(cert: SshCertificateBlob): string {
-  const base64 = Convert.ToBase64(cert.keyData);
+  const base64 = base64Codec.encode(cert.keyData);
   const parts = [cert.type, base64];
   if (cert.comment) {
     parts.push(cert.comment);

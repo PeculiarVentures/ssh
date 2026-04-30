@@ -1,4 +1,6 @@
-import { BufferSourceConverter, Convert } from 'pvtsutils';
+import { toUint8Array } from '@peculiar/utils/bytes';
+import { base64url, hex } from '@peculiar/utils/encoding';
+import * as pem from '@peculiar/utils/pem';
 import {
   EncryptedKeyNotSupportedError,
   InvalidKeyDataError,
@@ -57,7 +59,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     }
 
     // Convert base64url to bytes
-    const keyBytes = new Uint8Array(Convert.FromBase64Url(jwk.x));
+    const keyBytes = base64url.decode(jwk.x);
 
     // Create SSH format: type + length + key_data
     const writer = new SshWriter();
@@ -78,7 +80,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { publicKey, crypto } = params;
 
     const spki = await crypto.subtle.exportKey('spki', publicKey);
-    return BufferSourceConverter.toUint8Array(spki);
+    return toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -91,7 +93,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { privateKey, crypto } = params;
 
     const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
-    return BufferSourceConverter.toUint8Array(pkcs8);
+    return toUint8Array(pkcs8);
   }
 
   async exportPrivateSsh(params: ExportPrivateToSshParams): Promise<Uint8Array> {
@@ -103,8 +105,8 @@ export class Ed25519Binding implements AlgorithmBinding {
       throw new InvalidKeyDataError('Ed25519 private key JWK missing required parameters');
     }
 
-    const privateBytes = new Uint8Array(Convert.FromBase64Url(jwk.d));
-    const publicBytes = new Uint8Array(Convert.FromBase64Url(jwk.x));
+    const privateBytes = base64url.decode(jwk.d);
+    const publicBytes = base64url.decode(jwk.x);
 
     // Build the private key section as expected by importPrivateFromSsh
     const writer = new SshWriter();
@@ -129,17 +131,12 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
-    const base64Data = sshKey
-      .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
-      .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
-      .replace(/\s/g, '');
-
-    const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
+    const raw = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+    const reader = new SshReader(raw);
 
     // Check magic string
     const magic = reader.readBytes(15);
-    if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
+    if (hex.encode(magic) !== '6f70656e7373682d6b65792d763100') {
       throw new InvalidPrivateKeyFormatError('invalid magic string');
     }
 
@@ -196,8 +193,8 @@ export class Ed25519Binding implements AlgorithmBinding {
     const jwk = {
       kty: 'OKP' as const,
       crv: 'Ed25519',
-      d: Convert.ToBase64Url(privateKey),
-      x: Convert.ToBase64Url(_publicKeyBytes),
+      d: base64url.encode(privateKey),
+      x: base64url.encode(_publicKeyBytes),
     };
 
     return crypto.subtle.importKey('jwk', jwk, 'Ed25519', true, ['sign']);
@@ -207,7 +204,7 @@ export class Ed25519Binding implements AlgorithmBinding {
     const { privateKey, data, crypto } = params;
 
     const signature = await crypto.subtle.sign('Ed25519', privateKey, data as any);
-    return BufferSourceConverter.toUint8Array(signature);
+    return toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {

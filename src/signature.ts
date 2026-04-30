@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { base64 as base64Codec } from '@peculiar/utils/encoding';
 import { getCrypto } from './crypto';
 import { SshPrivateKey } from './key/private_key';
 import { SshPublicKey } from './key/public_key';
@@ -59,8 +59,8 @@ export class SshSignature extends SshObject {
   /**
    * Parse SSH signature from base64 string
    */
-  static fromBase64(base64: string): SshSignature {
-    const data = new Uint8Array(Convert.FromBase64(base64));
+  static fromBase64(base64Text: string): SshSignature {
+    const data = base64Codec.decode(base64Text);
     return SshSignature.parse(data);
   }
 
@@ -86,7 +86,7 @@ export class SshSignature extends SshObject {
    * Export to base64 string
    */
   toBase64(): string {
-    return Convert.ToBase64(this.serialize());
+    return base64Codec.encode(this.serialize());
   }
 
   /**

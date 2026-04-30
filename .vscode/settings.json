@@ -12,12 +12,6 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.suggest.autoImports": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
-  "typescript.preferences.includePackageJsonAutoImports": "auto",
-  "typescript.format.enable": false,
   // ESLint settings
   "eslint.validate": [
     "javascript",
@@ -31,8 +25,6 @@
   "prettier.configPath": ".prettierrc",
   // Testing settings
   "testExplorer.useNativeTesting": false,
-  "vitest.commandLine": "npm test",
-  "vitest.config": "vitest.config.ts",
   // File associations
   "files.associations": {
     "*.md": "markdown",
@@ -54,4 +46,5 @@
   // Git settings
   "git.autofetch": true,
   "git.enableSmartCommit": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
 }
