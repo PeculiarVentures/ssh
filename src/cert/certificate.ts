@@ -108,11 +108,16 @@ export class SshCertificate extends SshObject {
     // Get binding for the signature algorithm
     const binding = AlgorithmRegistry.get(sshSignature.algorithm);
 
+    // Convert SSH signature encoding to the WebCrypto-native raw format
+    const decodedSignature = binding.decodeSignature({
+      signature: this.data.signature,
+    });
+
     // Get CryptoKey and verify
     const cryptoKey = await verifyKey.toWebCrypto(crypto);
     return binding.verify({
       publicKey: cryptoKey,
-      signature: sshSignature.signature,
+      signature: decodedSignature.signature,
       data: signedData,
       crypto,
     });
