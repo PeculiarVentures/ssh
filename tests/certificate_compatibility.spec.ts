@@ -37,77 +37,73 @@ const algorithms = [
 describe('Certificate Compatibility', () => {
   // Test: Module creates certificate, ssh-keygen can verify it
   algorithms.forEach(algo => {
-    const shouldSkip = algo.name.includes('ECDSA'); // Skip ECDSA for now due to verification issues
-    (shouldSkip ? it.skip : it)(
-      `should create ${algo.name} certificate with Module and verify with ssh-keygen`,
-      async () => {
-        const caKeyFile = join(
-          tmpDirPath,
-          `ssh-test-ca-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        );
-        const userPubFile = join(
-          tmpDirPath,
-          `ssh-test-user-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pub`,
-        );
-        const certFile = join(
-          tmpDirPath,
-          `ssh-test-cert-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-cert.pub`,
-        );
+    it(`should create ${algo.name} certificate with Module and verify with ssh-keygen`, async () => {
+      const caKeyFile = join(
+        tmpDirPath,
+        `ssh-test-ca-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      );
+      const userPubFile = join(
+        tmpDirPath,
+        `ssh-test-user-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pub`,
+      );
+      const certFile = join(
+        tmpDirPath,
+        `ssh-test-cert-mod-${algo.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-cert.pub`,
+      );
 
+      try {
+        // Create CA key pair in module
+        const caKeyPair = await SSH.createKeyPair(algo.moduleType);
+
+        // Create user key pair in module
+        const userKeyPair = await SSH.createKeyPair(algo.moduleType);
+
+        // Export user public key to SSH format
+        const userPubSsh = `${await userKeyPair.publicKey.toSSH()} testuser@example.com`;
+        writeFileSync(userPubFile, `${userPubSsh}\n`);
+
+        // Create certificate with module
+        const certBuilder = SSH.createCertificate(userKeyPair.publicKey);
+        certBuilder.setType('user');
+        certBuilder.setKeyId('test-cert');
+        certBuilder.addPrincipal('testuser@example.com');
+        certBuilder.addPrincipal('developer');
+        certBuilder.setValidity(Date.now(), Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
+
+        const signatureAlgorithm = algo.sigAlgo as
+          | 'rsa-sha2-256'
+          | 'rsa-sha2-512'
+          | 'ecdsa-sha2-nistp256'
+          | 'ecdsa-sha2-nistp384'
+          | 'ecdsa-sha2-nistp521'
+          | 'ssh-ed25519';
+
+        const cert = await certBuilder.sign({
+          signatureKey: caKeyPair.publicKey,
+          privateKey: await caKeyPair.privateKey.toWebCrypto(),
+          signatureAlgorithm,
+        });
+
+        // Export certificate to SSH format
+        const certSsh = await cert.toSSH();
+        writeFileSync(certFile, `${certSsh}\n`);
+
+        // Verify certificate with our own implementation first
+        const isValidInternal = await cert.verify(caKeyPair.publicKey);
+        expect(isValidInternal).toBe(true);
+
+        // Verify certificate with ssh-keygen
+        const { execSync } = await import('child_process');
         try {
-          // Create CA key pair in module
-          const caKeyPair = await SSH.createKeyPair(algo.moduleType);
-
-          // Create user key pair in module
-          const userKeyPair = await SSH.createKeyPair(algo.moduleType);
-
-          // Export user public key to SSH format
-          const userPubSsh = `${await userKeyPair.publicKey.toSSH()} testuser@example.com`;
-          writeFileSync(userPubFile, `${userPubSsh}\n`);
-
-          // Create certificate with module
-          const certBuilder = SSH.createCertificate(userKeyPair.publicKey);
-          certBuilder.setType('user');
-          certBuilder.setKeyId('test-cert');
-          certBuilder.addPrincipal('testuser@example.com');
-          certBuilder.addPrincipal('developer');
-          certBuilder.setValidity(Date.now(), Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-
-          const signatureAlgorithm = algo.sigAlgo as
-            | 'rsa-sha2-256'
-            | 'rsa-sha2-512'
-            | 'ecdsa-sha2-nistp256'
-            | 'ecdsa-sha2-nistp384'
-            | 'ecdsa-sha2-nistp521'
-            | 'ssh-ed25519';
-
-          const cert = await certBuilder.sign({
-            signatureKey: caKeyPair.publicKey,
-            privateKey: await caKeyPair.privateKey.toWebCrypto(),
-            signatureAlgorithm,
-          });
-
-          // Export certificate to SSH format
-          const certSsh = await cert.toSSH();
-          writeFileSync(certFile, `${certSsh}\n`);
-
-          // Verify certificate with our own implementation first
-          const isValidInternal = await cert.verify(caKeyPair.publicKey);
-          expect(isValidInternal).toBe(true);
-
-          // Verify certificate with ssh-keygen
-          const { execSync } = await import('child_process');
-          try {
-            execSync(`ssh-keygen -L -f "${certFile}"`, { stdio: 'pipe', encoding: 'utf8' });
-            // If no error, ssh-keygen can read the certificate
-          } catch (error: any) {
-            throw new Error(`ssh-keygen failed to read ${algo.name} certificate: ${error.message}`);
-          }
-        } finally {
-          cleanupTempFiles(caKeyFile, userPubFile, certFile);
+          execSync(`ssh-keygen -L -f "${certFile}"`, { stdio: 'pipe', encoding: 'utf8' });
+          // If no error, ssh-keygen can read the certificate
+        } catch (error: any) {
+          throw new Error(`ssh-keygen failed to read ${algo.name} certificate: ${error.message}`);
         }
-      },
-    );
+      } finally {
+        cleanupTempFiles(caKeyFile, userPubFile, certFile);
+      }
+    });
   });
 
   // Test: ssh-keygen creates certificate, Module can import and verify it

@@ -191,6 +191,48 @@ describe('SshCertificateBuilder', () => {
     expect(isValid).toBe(true);
   });
 
+  it('should verify ECDSA-signed certificate', async () => {
+    const keyPair = await crypto.subtle.generateKey(
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const caKeyPair = await crypto.subtle.generateKey(
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+
+    const publicKey = await SshPublicKey.fromWebCrypto(keyPair.publicKey);
+    const caPublicKey = await SshPublicKey.fromWebCrypto(caKeyPair.publicKey);
+
+    const builder = new SshCertificateBuilder({
+      publicKey,
+      keyId: 'test-ecdsa-ca-cert',
+      validPrincipals: ['user@example.com'],
+    });
+
+    const certificate = await builder.sign({
+      signatureKey: caPublicKey,
+      privateKey: caKeyPair.privateKey,
+    });
+
+    const isValid = await certificate.verify(caPublicKey);
+    expect(isValid).toBe(true);
+
+    const certText = await certificate.toSSH();
+    const certFromText = await SshCertificate.fromSSH(certText);
+    const isValidRoundTrip = await certFromText.verify(caPublicKey);
+    expect(isValidRoundTrip).toBe(true);
+  });
+
   it('should build certificate with RSA SHA-512', async () => {
     // Generate RSA test keys
     const keyPair = await crypto.subtle.generateKey(
