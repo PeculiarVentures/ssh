@@ -161,7 +161,7 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload release package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: |
@@ -171,7 +171,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release version files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-version-files
           path: |
