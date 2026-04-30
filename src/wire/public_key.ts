@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { base64 as base64Codec } from '@peculiar/utils/encoding';
 import { InvalidFormatError } from '../errors';
 import type { SshKeyType } from '../types';
 import { SshReader } from './reader';
@@ -16,7 +16,7 @@ export function parsePublicKey(input: string | Uint8Array): SshPublicKeyBlob {
   }
 
   const type = parts[0] as SshKeyType;
-  const blob = new Uint8Array(Convert.FromBase64(parts[1]));
+  const blob = base64Codec.decode(parts[1]);
   const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
 
   // Validate blob
@@ -34,7 +34,7 @@ export function parsePublicKey(input: string | Uint8Array): SshPublicKeyBlob {
 }
 
 export function serializePublicKey(blob: SshPublicKeyBlob): string {
-  const base64 = Convert.ToBase64(blob.keyData);
+  const base64 = base64Codec.encode(blob.keyData);
   const parts = [blob.type, base64];
   if (blob.comment) {
     parts.push(blob.comment);

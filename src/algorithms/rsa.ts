@@ -1,4 +1,6 @@
-import { BufferSourceConverter, Convert } from 'pvtsutils';
+import { toUint8Array } from '@peculiar/utils/bytes';
+import { base64url, hex } from '@peculiar/utils/encoding';
+import * as pem from '@peculiar/utils/pem';
 
 import {
   EncryptedKeyNotSupportedError,
@@ -49,8 +51,8 @@ export class RsaBinding implements AlgorithmBinding {
     // Create JWK
     const jwk = {
       kty: 'RSA' as const,
-      n: Convert.ToBase64Url(n),
-      e: Convert.ToBase64Url(e),
+      n: base64url.encode(n),
+      e: base64url.encode(e),
     };
 
     return crypto.subtle.importKey(
@@ -74,8 +76,8 @@ export class RsaBinding implements AlgorithmBinding {
     }
 
     // Decode base64url
-    const n = BufferSourceConverter.toUint8Array(Convert.FromBase64Url(jwk.n));
-    const e = BufferSourceConverter.toUint8Array(Convert.FromBase64Url(jwk.e));
+    const n = toUint8Array(base64url.decode(jwk.n));
+    const e = toUint8Array(base64url.decode(jwk.e));
 
     const writer = new SshWriter();
     writer.writeString('ssh-rsa');
@@ -102,7 +104,7 @@ export class RsaBinding implements AlgorithmBinding {
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
     const spki = await crypto.subtle.exportKey('spki', publicKey);
-    return BufferSourceConverter.toUint8Array(spki);
+    return toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
@@ -122,24 +124,19 @@ export class RsaBinding implements AlgorithmBinding {
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
     const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
-    return BufferSourceConverter.toUint8Array(pkcs8);
+    return toUint8Array(pkcs8);
   }
 
   async importPrivateSsh(params: ImportPrivateFromSshParams): Promise<CryptoKey> {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
-    const base64Data = sshKey
-      .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
-      .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
-      .replace(/\s/g, '');
-
-    const binaryData = Convert.FromBase64(base64Data);
-    const reader = new SshReader(BufferSourceConverter.toUint8Array(binaryData));
+    const raw = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+    const reader = new SshReader(raw);
 
     // Check magic string
     const magic = reader.readBytes(15);
-    if (Convert.ToHex(magic) !== '6f70656e7373682d6b65792d763100') {
+    if (hex.encode(magic) !== '6f70656e7373682d6b65792d763100') {
       throw new InvalidPrivateKeyFormatError('invalid magic string');
     }
 
@@ -192,28 +189,28 @@ export class RsaBinding implements AlgorithmBinding {
 
     // Create JWK with all required parameters
     // Convert Uint8Array to BigInt for calculations
-    const dBig = BigInt('0x' + Convert.ToHex(d));
-    const pBig = BigInt('0x' + Convert.ToHex(p));
-    const qBig = BigInt('0x' + Convert.ToHex(q));
+    const dBig = BigInt('0x' + hex.encode(d));
+    const pBig = BigInt('0x' + hex.encode(p));
+    const qBig = BigInt('0x' + hex.encode(q));
 
     // Calculate dp = d mod (p-1), dq = d mod (q-1)
     const dpBig = dBig % (pBig - 1n);
     const dqBig = dBig % (qBig - 1n);
 
     // Convert back to Uint8Array with proper padding
-    const dpBytes = Convert.FromHex(dpBig.toString(16).padStart(p.length * 2, '0'));
-    const dqBytes = Convert.FromHex(dqBig.toString(16).padStart(q.length * 2, '0'));
+    const dpBytes = hex.decode(dpBig.toString(16).padStart(p.length * 2, '0'));
+    const dqBytes = hex.decode(dqBig.toString(16).padStart(q.length * 2, '0'));
 
     const jwk = {
       kty: 'RSA' as const,
-      n: Convert.ToBase64Url(n),
-      e: Convert.ToBase64Url(e),
-      d: Convert.ToBase64Url(d),
-      p: Convert.ToBase64Url(p),
-      q: Convert.ToBase64Url(q),
-      dp: Convert.ToBase64Url(dpBytes),
-      dq: Convert.ToBase64Url(dqBytes),
-      qi: Convert.ToBase64Url(iqmp),
+      n: base64url.encode(n),
+      e: base64url.encode(e),
+      d: base64url.encode(d),
+      p: base64url.encode(p),
+      q: base64url.encode(q),
+      dp: base64url.encode(dpBytes),
+      dq: base64url.encode(dqBytes),
+      qi: base64url.encode(iqmp),
     };
 
     return crypto.subtle.importKey(
@@ -237,12 +234,12 @@ export class RsaBinding implements AlgorithmBinding {
       throw new InvalidKeyDataError('RSA JWK missing required parameters');
     }
 
-    const n = new Uint8Array(Convert.FromBase64Url(jwk.n));
-    const e = new Uint8Array(Convert.FromBase64Url(jwk.e));
-    const d = new Uint8Array(Convert.FromBase64Url(jwk.d));
-    const p = new Uint8Array(Convert.FromBase64Url(jwk.p));
-    const q = new Uint8Array(Convert.FromBase64Url(jwk.q));
-    const qi = jwk.qi ? new Uint8Array(Convert.FromBase64Url(jwk.qi)) : new Uint8Array();
+    const n = base64url.decode(jwk.n);
+    const e = base64url.decode(jwk.e);
+    const d = base64url.decode(jwk.d);
+    const p = base64url.decode(jwk.p);
+    const q = base64url.decode(jwk.q);
+    const qi = jwk.qi ? base64url.decode(jwk.qi) : new Uint8Array();
 
     // Build the private key section as expected by importPrivateFromSsh
     // Order: ssh-rsa, n, e, d, iqmp, p, q
@@ -299,7 +296,7 @@ export class RsaBinding implements AlgorithmBinding {
     }
 
     const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyToUse, data as BufferSource);
-    return BufferSourceConverter.toUint8Array(signature);
+    return toUint8Array(signature);
   }
 
   async verify(params: VerifyParams): Promise<boolean> {

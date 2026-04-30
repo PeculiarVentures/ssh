@@ -78,6 +78,6 @@
     "vitest": "^4.1.5"
   },
   "dependencies": {
-    "pvtsutils": "^1.3.6"
+    "@peculiar/utils": "^2.0.2"
   }
 }

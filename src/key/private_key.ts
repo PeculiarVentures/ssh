@@ -1,4 +1,5 @@
-import { Convert } from 'pvtsutils';
+import { hex } from '@peculiar/utils/encoding';
+import * as pem from '@peculiar/utils/pem';
 import { getCrypto } from '../crypto';
 import {
   EncryptedKeyNotSupportedError,
@@ -72,14 +73,9 @@ export class SshPrivateKey extends SshObject {
     // - BEGIN/END markers
     // - Base64-encoded binary data containing key material
 
-    const base64Data = sshKey
-      .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
-      .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
-      .replace(/\s/g, '');
-
     let binaryData: Uint8Array;
     try {
-      binaryData = new Uint8Array(Convert.FromBase64(base64Data));
+      binaryData = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
     } catch {
       throw new InvalidPrivateKeyFormatError('Invalid base64 encoding');
     }
@@ -89,9 +85,9 @@ export class SshPrivateKey extends SshObject {
     // Check magic string "openssh-key-v1\0"
     const magic = reader.readBytes(15);
     const expectedMagic = '6f70656e7373682d6b65792d763100';
-    if (Convert.ToHex(magic) !== expectedMagic) {
+    if (hex.encode(magic) !== expectedMagic) {
       throw new InvalidPrivateKeyFormatError(
-        `Invalid magic bytes. Expected: ${expectedMagic}, got: ${Convert.ToHex(magic)}`,
+        `Invalid magic bytes. Expected: ${expectedMagic}, got: ${hex.encode(magic)}`,
       );
     }
 
@@ -215,15 +211,9 @@ export class SshPrivateKey extends SshObject {
 
       // Encode as base64 and wrap in PEM
       const keyData = writer.toUint8Array();
-      const base64 = Convert.ToBase64(keyData);
-
-      // Split into 70-character lines
-      const lines = [];
-      for (let i = 0; i < base64.length; i += 70) {
-        lines.push(base64.slice(i, i + 70));
-      }
-
-      return `-----BEGIN OPENSSH PRIVATE KEY-----\n${lines.join('\n')}\n-----END OPENSSH PRIVATE KEY-----`;
+      return pem.encode('OPENSSH PRIVATE KEY', keyData, {
+        lineLength: 70,
+      });
     } else if (format === 'pkcs8') {
       const binding = AlgorithmRegistry.get(this.keyType);
       const pkcs8 = await binding.exportPrivatePkcs8({ privateKey: this.cryptoKey, crypto });

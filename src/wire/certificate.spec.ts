@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { base64 as base64Codec } from '@peculiar/utils/encoding';
 import { describe, expect, it } from 'vitest';
 import { testUserEcdsa, testUserEd25519, testUserRsa } from '../../tests/utils/testFixtures';
 import { getCrypto } from '../crypto';
@@ -29,7 +29,7 @@ describe('parseCertificate', () => {
     writer.writeString('ssh-rsa-cert-v01@openssh.com');
     writer.writeBytes(new Uint8Array([0x01, 0x02, 0x03]));
     const fullData = writer.toUint8Array();
-    const base64 = Convert.ToBase64(fullData);
+    const base64 = base64Codec.encode(fullData);
 
     const certString = `ssh-rsa-cert-v01@openssh.com ${base64}`;
     const result = parseCertificate(certString);

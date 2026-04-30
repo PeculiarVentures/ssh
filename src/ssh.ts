@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { base64 as base64Codec } from '@peculiar/utils/encoding';
 import { SshCertificateBuilder } from './cert/builder';
 import { SshCertificate } from './cert/certificate';
 import { getCrypto } from './crypto';
@@ -258,7 +258,7 @@ export class SSH {
       .replace(/-----BEGIN [^-]+-----/, '')
       .replace(/-----END [^-]+-----/, '')
       .replace(/\s/g, '');
-    return new Uint8Array(Convert.FromBase64(base64));
+    return base64Codec.decode(base64);
   }
 
   /**
@@ -419,10 +419,10 @@ export class SSH {
           .map(b => b.toString(16).padStart(2, '0'))
           .join('');
       case 'base64':
-        return Convert.ToBase64(hash);
+        return base64Codec.encode(hash);
       case 'ssh': {
         const prefix = algorithm === 'sha256' ? 'SHA256' : 'SHA512';
-        return `${prefix}:${Convert.ToBase64(hash)}`;
+        return `${prefix}:${base64Codec.encode(hash)}`;
       }
       default:
         throw new InvalidFormatError(format);

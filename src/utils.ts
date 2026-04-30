@@ -1,4 +1,4 @@
-import { Convert } from 'pvtsutils';
+import { hex } from '@peculiar/utils/encoding';
 import type { SshKeyType } from './types';
 
 // Reusable TextEncoder and TextDecoder instances
@@ -45,7 +45,7 @@ export function detectKeyType(data: Uint8Array): SshKeyType | null {
     offset++;
 
     const oid = data.slice(offset, offset + oidLength);
-    const oidHex = Convert.ToHex(oid);
+    const oidHex = hex.encode(oid);
 
     // Map OIDs to SSH key types
     switch (oidHex) {
@@ -62,7 +62,7 @@ export function detectKeyType(data: Uint8Array): SshKeyType | null {
             offset + oidLength + 2,
             offset + oidLength + 2 + curveOidLength,
           );
-          const curveOidHex = Convert.ToHex(curveOid);
+          const curveOidHex = hex.encode(curveOid);
 
           switch (curveOidHex) {
             case '2a8648ce3d030107': // P-256
