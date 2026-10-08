@@ -12,7 +12,7 @@ These instructions apply to the entire repository.
 
 ## Environment
 
-- Use Node.js 20 or newer. The package declares `"node": ">=20.0.0"` in `package.json`.
+- Use Node.js 22.18 or newer for development (required by tsdown and Vitest). The published package still supports Node.js 20 (`"node": ">=20.0.0"` in `package.json`).
 - Use npm scripts from `package.json` for validation instead of ad hoc commands when an equivalent script already exists.
 
 ## Commit Messages

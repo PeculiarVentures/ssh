@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the @peculiar/ssh library! This d
 
 ### Prerequisites
 
-- Node.js 18.x or higher
+- Node.js 22.18 or higher (for development; the published package supports Node.js 20+)
 - npm or yarn
 
 ### Installation
@@ -30,7 +30,7 @@ npm run build
 
 This project uses GitHub Actions for continuous integration and deployment:
 
-- **Testing**: Automated tests run on multiple Node.js versions (18.x, 20.x, 22.x)
+- **Testing**: Automated tests run on Node.js 22.x
 - **Code Coverage**: Coverage reports are generated and uploaded to [Coveralls](https://coveralls.io/github/PeculiarVentures/ssh)
 - **Linting**: oxlint and oxfmt checks ensure code quality
 - **Type Checking**: TypeScript compilation checks
