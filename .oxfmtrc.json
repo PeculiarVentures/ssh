@@ -16,7 +16,7 @@
   "ignorePatterns": [
     "node_modules",
     "coverage",
-    "dist",
+    "build",
     "*.tsbuildinfo",
     "package-lock.json",
     ".vscode"

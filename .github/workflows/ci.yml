@@ -13,14 +13,14 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -35,10 +35,13 @@ jobs:
         run: npm run format:check
 
       - name: Type check
-        run: npm run build:check
+        run: npm run typecheck
 
-      - name: Run tests
-        run: npm test
+      - name: Build
+        run: npm run build
+
+      - name: Check generated package exports are committed
+        run: git diff --exit-code package.json
 
       - name: Run tests with coverage
         run: npm run test:coverage
