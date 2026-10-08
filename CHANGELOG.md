@@ -1,3 +1,10 @@
+# [2.0.0](https://github.com/PeculiarVentures/ssh/compare/v1.1.3...v2.0.0) (2026-10-08)
+
+### BREAKING CHANGES
+
+* Build switched to tsdown; output moved from `build/{cjs,esm,types}/` to flat `build/*.js`/`.cjs` entries. Only paths listed in `exports` are supported.
+* Upgraded `@peculiar/utils` to 3.0.0.
+
 ## [1.1.3](https://github.com/PeculiarVentures/ssh/compare/v1.1.2...v1.1.3) (2026-04-30)
 
 ### Bug Fixes
