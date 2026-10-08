@@ -47,19 +47,19 @@ Run the smallest relevant checks first, then widen only as needed.
 
 Common validation scripts:
 
-- `npm run build:check` — TypeScript type check without emitting files
+- `npm run typecheck` — TypeScript type check without emitting files
 - `npm test` — full Vitest suite
 - `npm run test:coverage` — full suite with coverage
 - `npm run lint` — oxlint checks
 - `npm run format:check` — oxfmt formatting check
-- `npm run build` — production build with Rollup
+- `npm run build` — production build with tsdown
 
 Suggested verification flows:
 
-- For TypeScript logic changes in `src/`: `npm run build:check && npm test`
-- For public API, serialization, or crypto-path changes: `npm run build:check && npm test && npm run build`
-- For lint-sensitive edits or broad refactors: `npm run lint && npm run format:check && npm run build:check`
-- Before handing off a non-trivial change: `npm run lint && npm run format:check && npm run build:check && npm test`
+- For TypeScript logic changes in `src/`: `npm run typecheck && npm test`
+- For public API, serialization, or crypto-path changes: `npm run typecheck && npm test && npm run build`
+- For lint-sensitive edits or broad refactors: `npm run lint && npm run format:check && npm run typecheck`
+- Before handing off a non-trivial change: `npm run lint && npm run format:check && npm run typecheck && npm test`
 
 ## Testing Conventions
 

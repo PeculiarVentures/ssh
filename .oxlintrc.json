@@ -18,5 +18,5 @@
     "unicorn/no-array-reverse": "off",
     "unicorn/no-array-sort": "off"
   },
-  "ignorePatterns": ["dist/**", "coverage/**"]
+  "ignorePatterns": ["build/**", "coverage/**"]
 }

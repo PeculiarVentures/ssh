@@ -67,7 +67,7 @@ npm run format:check
 npm run format
 
 # Type check
-npm run build:check
+npm run typecheck
 
 # Run tests
 npm test
@@ -81,7 +81,7 @@ npm run test:coverage
 - Write tests for new features in the `src/**/*.spec.ts` files
 - Use Vitest as the test runner
 - Aim for good test coverage
-- Run `npm run test:ui` for interactive test development
+- Run `npm run test:watch` for interactive test development
 
 ### Commit Messages
 

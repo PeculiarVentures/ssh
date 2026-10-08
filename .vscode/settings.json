@@ -24,13 +24,13 @@
   // Exclude files from search and explorer
   "files.exclude": {
     "**/node_modules": true,
-    "**/dist": true,
+    "**/build": true,
     "**/.git": true,
     "**/.DS_Store": true
   },
   "search.exclude": {
     "**/node_modules": true,
-    "**/dist": true,
+    "**/build": true,
     "**/*.log": true
   },
   // Git settings

@@ -35,10 +35,13 @@ jobs:
         run: npm run format:check
 
       - name: Type check
-        run: npm run build:check
+        run: npm run typecheck
 
-      - name: Run tests
-        run: npm test
+      - name: Build
+        run: npm run build
+
+      - name: Check generated package exports are committed
+        run: git diff --exit-code package.json
 
       - name: Run tests with coverage
         run: npm run test:coverage
