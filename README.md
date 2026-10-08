@@ -7,11 +7,11 @@ A TypeScript library for working with SSH keys and certificates in both Node.js 
 
 ## Features
 
-* 🔑 Generate RSA, ECDSA, and Ed25519 keys
-* 🔐 Convert between SSH and WebCrypto formats (SPKI / PKCS8)
-* ✍️ Create and verify SSH signatures
-* 📜 Parse and build SSH certificates
-* 🌐 Works in both browsers and Node.js
+- 🔑 Generate RSA, ECDSA, and Ed25519 keys
+- 🔐 Convert between SSH and WebCrypto formats (SPKI / PKCS8)
+- ✍️ Create and verify SSH signatures
+- 📜 Parse and build SSH certificates
+- 🌐 Works in both browsers and Node.js
 
 ## Installation
 
@@ -69,7 +69,7 @@ const cert = await SSH.createCertificate(ed.publicKey)
   .setKeyId('user@example.com')
   .addPrincipal('user@example.com')
   .setType('user')
-  .setValidity(Date.now(), Date.now() + 365*24*60*60*1000)
+  .setValidity(Date.now(), Date.now() + 365 * 24 * 60 * 60 * 1000)
   .sign({
     signatureKey: rsa.publicKey,
     privateKey: await rsa.privateKey.toWebCrypto(),
@@ -81,19 +81,19 @@ const valid = await cert.verify(rsa.publicKey);
 
 ## Supported Algorithms
 
-* **RSA** - Key sizes: 2048, 3072, 4096 bits with SHA-256/SHA-512 hash selection at signing
-* **Ed25519** - Modern elliptic curve signature scheme
-* **ECDSA** - P-256, P-384, P-521 curves with SHA-256/SHA-384/SHA-512
+- **RSA** - Key sizes: 2048, 3072, 4096 bits with SHA-256/SHA-512 hash selection at signing
+- **Ed25519** - Modern elliptic curve signature scheme
+- **ECDSA** - P-256, P-384, P-521 curves with SHA-256/SHA-384/SHA-512
 
 ## Platform Support
 
 This library works in all modern browsers that support WebCrypto API and in Node.js. Here's the compatibility matrix:
 
-| Feature | Chrome | Edge | Firefox | Safari | Opera | Chrome Android | Firefox Android | Safari iOS | Node.js |
-|---------|--------|------|---------|--------|-------|----------------|-----------------|------------|---------|
-| **WebCrypto API** | 37+ | 79+ | 34+ | 7+ | 24+ | 37+ | 34+ | 7+ | 15.0+ |
-| **RSA, ECDSA** | 37+ | 79+ | 34+ | 7+ | 24+ | 37+ | 34+ | 7+ | 15.0+ |
-| **Ed25519** | 137+ | 137+ | 129+ | 17+ | 121+ | 137+ | 129+ | 17+ | 16.17+ |
+| Feature           | Chrome | Edge | Firefox | Safari | Opera | Chrome Android | Firefox Android | Safari iOS | Node.js |
+| ----------------- | ------ | ---- | ------- | ------ | ----- | -------------- | --------------- | ---------- | ------- |
+| **WebCrypto API** | 37+    | 79+  | 34+     | 7+     | 24+   | 37+            | 34+             | 7+         | 15.0+   |
+| **RSA, ECDSA**    | 37+    | 79+  | 34+     | 7+     | 24+   | 37+            | 34+             | 7+         | 15.0+   |
+| **Ed25519**       | 137+   | 137+ | 129+    | 17+    | 121+  | 137+           | 129+            | 17+        | 16.17+  |
 
 For older browsers, you may need to provide a WebCrypto polyfill.
 

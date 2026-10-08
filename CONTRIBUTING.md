@@ -32,7 +32,7 @@ This project uses GitHub Actions for continuous integration and deployment:
 
 - **Testing**: Automated tests run on multiple Node.js versions (18.x, 20.x, 22.x)
 - **Code Coverage**: Coverage reports are generated and uploaded to [Coveralls](https://coveralls.io/github/PeculiarVentures/ssh)
-- **Linting**: ESLint and Prettier checks ensure code quality
+- **Linting**: oxlint and oxfmt checks ensure code quality
 - **Type Checking**: TypeScript compilation checks
 - **Release**: Automatic npm publishing and GitHub releases on version tags
 
@@ -119,8 +119,8 @@ Types:
 ## Code Style
 
 - Use TypeScript for all new code
-- Follow ESLint configuration
-- Use Prettier for code formatting
+- Follow the oxlint configuration (`.oxlintrc.json`)
+- Use oxfmt for code formatting (`.oxfmtrc.json`)
 - Write JSDoc comments for public APIs
 - Use meaningful variable and function names
 

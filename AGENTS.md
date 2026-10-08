@@ -50,8 +50,8 @@ Common validation scripts:
 - `npm run build:check` — TypeScript type check without emitting files
 - `npm test` — full Vitest suite
 - `npm run test:coverage` — full suite with coverage
-- `npm run lint` — ESLint checks
-- `npm run format:check` — Prettier formatting check
+- `npm run lint` — oxlint checks
+- `npm run format:check` — oxfmt formatting check
 - `npm run build` — production build with Rollup
 
 Suggested verification flows:

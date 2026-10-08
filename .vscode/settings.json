@@ -2,7 +2,7 @@
   // Editor settings
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "never",
+    "source.fixAll.oxc": "never",
     "source.organizeImports": "explicit"
   },
   "editor.tabSize": 2,
@@ -10,25 +10,15 @@
   "editor.detectIndentation": false,
   // TypeScript settings
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  // ESLint settings
-  "eslint.validate": [
-    "javascript",
-    "typescript",
-  ],
-  "eslint.codeAction.showDocumentation": {
-    "enable": true
-  },
-  // Prettier settings
-  "prettier.requireConfig": true,
-  "prettier.configPath": ".prettierrc",
+  // Oxc settings
+  "oxc.fmt.configPath": ".oxfmtrc.json",
   // Testing settings
   "testExplorer.useNativeTesting": false,
   // File associations
   "files.associations": {
     "*.md": "markdown",
-    ".prettierrc": "json",
     "vitest.config.ts": "typescript"
   },
   // Exclude files from search and explorer
