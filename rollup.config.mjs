@@ -13,9 +13,7 @@ const __dirname = path.dirname(__filename);
 const startYear = 2025;
 const currentYear = new Date().getFullYear();
 
-const year = startYear === currentYear
-  ? `${startYear}`
-  : `${startYear}-${currentYear}`;
+const year = startYear === currentYear ? `${startYear}` : `${startYear}-${currentYear}`;
 
 const banner = [
   '/**',
@@ -25,9 +23,7 @@ const banner = [
   '',
 ].join('\n');
 
-const externalDeps = new Set([
-  ...Object.keys(pkg.dependencies || {}),
-]);
+const externalDeps = new Set(Object.keys(pkg.dependencies || {}));
 
 const external = id => {
   return [...externalDeps].some(dep => {
@@ -45,15 +41,15 @@ export default [
         format: 'cjs',
         sourcemap: false,
         preserveModules: false,
-        banner
+        banner,
       },
       {
         file: pkg.module,
         format: 'esm',
         sourcemap: false,
         preserveModules: false,
-        banner
-      }
+        banner,
+      },
     ],
     plugins: [
       resolve(),
@@ -64,10 +60,10 @@ export default [
           moduleResolution: 'bundler',
           target: 'es2022',
           removeComments: true,
-          declaration: false
-        }
-      })
-    ]
+          declaration: false,
+        },
+      }),
+    ],
   },
   {
     input: path.join(__dirname, 'src/index.ts'),
@@ -75,8 +71,8 @@ export default [
     output: {
       file: './dist/index.d.ts',
       format: 'esm',
-      banner
+      banner,
     },
-    plugins: [dts()]
-  }
+    plugins: [dts()],
+  },
 ];

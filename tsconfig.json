@@ -10,13 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "lib": [
-      "ES2022",
-      "DOM"
-    ],
-    "types": [
-      "vitest/globals",
-      "node"
-    ],
+    "lib": ["ES2022", "DOM"],
+    "types": ["vitest/globals", "node"]
   }
 }

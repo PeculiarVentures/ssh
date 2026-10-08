@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "singleQuote": true,
+  "semi": true,
+  "tabWidth": 2,
+  "useTabs": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "avoid",
+  "quoteProps": "as-needed",
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "node_modules",
+    "coverage",
+    "dist",
+    "*.tsbuildinfo",
+    "package-lock.json",
+    ".vscode"
+  ]
+}
