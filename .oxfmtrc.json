@@ -19,6 +19,7 @@
     "build",
     "*.tsbuildinfo",
     "package-lock.json",
+    "CHANGELOG.md",
     ".vscode"
   ]
 }

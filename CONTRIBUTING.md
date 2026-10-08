@@ -34,18 +34,26 @@ This project uses GitHub Actions for continuous integration and deployment:
 - **Code Coverage**: Coverage reports are generated and uploaded to [Coveralls](https://coveralls.io/github/PeculiarVentures/ssh)
 - **Linting**: oxlint and oxfmt checks ensure code quality
 - **Type Checking**: TypeScript compilation checks
-- **Release**: Automatic npm publishing and GitHub releases on version tags
+- **Release**: Version bump PRs with generated changelog; npm publishing, tags, and GitHub releases on merge
 
 ### Publishing
 
-To publish a new version:
+Releases are done in two steps:
 
-1. Update version in `package.json`
-2. Create and push a git tag: `git tag v1.2.3 && git push origin v1.2.3`
-3. GitHub Actions will automatically:
-   - Run tests and build
-   - Publish to npm
-   - Create a GitHub release with auto-generated notes
+1. Run the **Version Bump** workflow (Actions → Version Bump → Run workflow) and pick `patch`, `minor`, or `major`.
+   It opens a `chore(release): vX.Y.Z` pull request that bumps `package.json`/`package-lock.json` and prepends a
+   `CHANGELOG.md` section generated with `conventional-changelog -p angular`.
+2. Review the version and changelog, then merge the pull request. The **Publish** workflow then:
+   - Runs lint, format, typecheck, tests, and build
+   - Publishes to npm via Trusted Publisher
+   - Pushes the `vX.Y.Z` tag and moves the major tag (e.g. `v1`)
+   - Creates a GitHub release from the matching `CHANGELOG.md` section
+
+Publish runs only when no GitHub release exists for the current version, so a failed run can be re-run safely.
+Set the optional `RELEASE_TOKEN` secret (PAT or GitHub App token) so CI runs on the version bump pull request.
+
+Only `feat`, `fix`, `perf`, and breaking changes appear in the changelog. If a release contains none of them, edit
+the new `CHANGELOG.md` section in the version bump pull request before merging; Publish fails on an empty section.
 
 ## Development Workflow
 
