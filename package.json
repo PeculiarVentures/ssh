@@ -55,7 +55,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "coverage": "vitest run --coverage",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",

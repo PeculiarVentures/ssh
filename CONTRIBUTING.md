@@ -70,7 +70,7 @@ npm run typecheck
 npm test
 
 # Run tests with coverage
-npm run test:coverage
+npm run coverage
 ```
 
 ### Testing
