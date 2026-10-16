@@ -2,8 +2,8 @@ import { readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
-import { SSH } from "../src";
-import { cleanupTempFiles, runSshKeygen } from "./utils/compatibility";
+import { SSH } from "..";
+import { cleanupTempFiles, runSshKeygen } from "../fixtures/ssh_keygen";
 
 const tmpDirPath = tmpdir();
 

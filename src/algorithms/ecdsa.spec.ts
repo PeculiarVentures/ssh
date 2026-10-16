@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ecdsaP384Key, ecdsaP521Key } from "../../tests/utils/testFixtures";
+import { ecdsaP384Key, ecdsaP521Key } from "../fixtures";
 import { getCrypto } from "../crypto";
 import { AlgorithmRegistry } from "../registry";
 import { SshReader, SshWriter } from "../wire";

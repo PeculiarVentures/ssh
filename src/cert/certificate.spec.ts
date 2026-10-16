@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rsaCertificate, testEd25519Cert } from "../../tests/utils/testFixtures";
+import { rsaCertificate, testEd25519Cert } from "../fixtures";
 import { getCrypto } from "../crypto";
 import { SshPublicKey } from "../key/public_key";
 import { SshCertificateBuilder } from "./builder";

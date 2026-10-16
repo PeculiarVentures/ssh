@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as fixtures from "../tests/utils/testFixtures";
+import * as fixtures from "./fixtures";
 import { SshCertificate } from "./cert/certificate";
 import { SshPrivateKey } from "./key/private_key";
 import { SshPublicKey } from "./key/public_key";

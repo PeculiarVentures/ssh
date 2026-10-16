@@ -10,7 +10,7 @@ import {
   ed25519PrivateKeySsh,
   rsaPrivateKeyPkcs8,
   rsaPrivateKeySsh,
-} from "../../tests/utils/testFixtures";
+} from "../fixtures";
 import { getCrypto } from "../crypto";
 import { SshPrivateKey } from "./private_key";
 
