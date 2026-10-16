@@ -25,8 +25,8 @@ export class SshError extends Error {
  */
 export class UnsupportedAlgorithmError extends SshError {
   constructor(algorithm: string, supportedAlgorithms?: string[]) {
-    const supported = supportedAlgorithms ? ` Supported: ${supportedAlgorithms.join(', ')}` : '';
-    super(`Unsupported algorithm: ${algorithm}.${supported}`, 'UNSUPPORTED_ALGORITHM');
+    const supported = supportedAlgorithms ? ` Supported: ${supportedAlgorithms.join(", ")}` : "";
+    super(`Unsupported algorithm: ${algorithm}.${supported}`, "UNSUPPORTED_ALGORITHM");
   }
 }
 
@@ -35,8 +35,8 @@ export class UnsupportedAlgorithmError extends SshError {
  */
 export class InvalidFormatError extends SshError {
   constructor(format: string, expectedFormat?: string) {
-    const expected = expectedFormat ? ` Expected: ${expectedFormat}` : '';
-    super(`Invalid format: ${format}.${expected}`, 'INVALID_FORMAT');
+    const expected = expectedFormat ? ` Expected: ${expectedFormat}` : "";
+    super(`Invalid format: ${format}.${expected}`, "INVALID_FORMAT");
   }
 }
 
@@ -45,8 +45,8 @@ export class InvalidFormatError extends SshError {
  */
 export class UnsupportedKeyTypeError extends SshError {
   constructor(keyType: string, supportedTypes?: string[]) {
-    const supported = supportedTypes ? ` Supported: ${supportedTypes.join(', ')}` : '';
-    super(`Unsupported key type: ${keyType}.${supported}`, 'UNSUPPORTED_KEY_TYPE');
+    const supported = supportedTypes ? ` Supported: ${supportedTypes.join(", ")}` : "";
+    super(`Unsupported key type: ${keyType}.${supported}`, "UNSUPPORTED_KEY_TYPE");
   }
 }
 
@@ -55,10 +55,8 @@ export class UnsupportedKeyTypeError extends SshError {
  */
 export class InvalidPrivateKeyFormatError extends SshError {
   constructor(details?: string) {
-    const message = details
-      ? `Invalid SSH private key format: ${details}`
-      : 'Invalid SSH private key format';
-    super(message, 'INVALID_PRIVATE_KEY_FORMAT');
+    const message = details ? `Invalid SSH private key format: ${details}` : "Invalid SSH private key format";
+    super(message, "INVALID_PRIVATE_KEY_FORMAT");
   }
 }
 
@@ -67,10 +65,8 @@ export class InvalidPrivateKeyFormatError extends SshError {
  */
 export class EncryptedKeyNotSupportedError extends SshError {
   constructor(cipher?: string) {
-    const message = cipher
-      ? `Encrypted SSH private keys are not supported (cipher: ${cipher})`
-      : 'Encrypted SSH private keys are not supported';
-    super(message, 'ENCRYPTED_KEY_NOT_SUPPORTED');
+    const message = cipher ? `Encrypted SSH private keys are not supported (cipher: ${cipher})` : "Encrypted SSH private keys are not supported";
+    super(message, "ENCRYPTED_KEY_NOT_SUPPORTED");
   }
 }
 
@@ -79,8 +75,8 @@ export class EncryptedKeyNotSupportedError extends SshError {
  */
 export class InvalidKeyDataError extends SshError {
   constructor(details?: string) {
-    const message = details ? `Invalid key data: ${details}` : 'Invalid key data';
-    super(message, 'INVALID_KEY_DATA');
+    const message = details ? `Invalid key data: ${details}` : "Invalid key data";
+    super(message, "INVALID_KEY_DATA");
   }
 }
 
@@ -89,11 +85,8 @@ export class InvalidKeyDataError extends SshError {
  */
 export class UnexpectedEOFError extends SshError {
   constructor(expected?: number, actual?: number) {
-    const details =
-      expected !== undefined && actual !== undefined
-        ? ` Expected ${expected} bytes, got ${actual}`
-        : '';
-    super(`Unexpected end of data${details}`, 'UNEXPECTED_EOF');
+    const details = expected !== undefined && actual !== undefined ? ` Expected ${expected} bytes, got ${actual}` : "";
+    super(`Unexpected end of data${details}`, "UNEXPECTED_EOF");
   }
 }
 
@@ -102,6 +95,6 @@ export class UnexpectedEOFError extends SshError {
  */
 export class ExportNotSupportedError extends SshError {
   constructor(algorithm: string, format: string) {
-    super(`SSH export to ${format} format not supported for ${algorithm}`, 'EXPORT_NOT_SUPPORTED');
+    super(`SSH export to ${format} format not supported for ${algorithm}`, "EXPORT_NOT_SUPPORTED");
   }
 }

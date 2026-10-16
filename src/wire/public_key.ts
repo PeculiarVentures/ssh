@@ -1,7 +1,7 @@
-import { base64 as base64Codec } from '@peculiar/utils/encoding';
-import { InvalidFormatError } from '../errors';
-import type { SshKeyType } from '../types';
-import { SshReader } from './reader';
+import { base64 as base64Codec } from "@peculiar/utils/encoding";
+import { InvalidFormatError } from "../errors";
+import type { SshKeyType } from "../types";
+import { SshReader } from "./reader";
 
 export interface SshPublicKeyBlob {
   type: SshKeyType;
@@ -10,20 +10,20 @@ export interface SshPublicKeyBlob {
 }
 
 export function parsePublicKey(input: string | Uint8Array): SshPublicKeyBlob {
-  const parts = typeof input === 'string' ? input.trim().split(/\s+/) : null;
+  const parts = typeof input === "string" ? input.trim().split(/\s+/) : null;
   if (!parts || parts.length < 2) {
-    throw new InvalidFormatError('Invalid SSH public key format');
+    throw new InvalidFormatError("Invalid SSH public key format");
   }
 
   const type = parts[0] as SshKeyType;
   const blob = base64Codec.decode(parts[1]);
-  const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
+  const comment = parts.length > 2 ? parts.slice(2).join(" ") : undefined;
 
   // Validate blob
   const reader = new SshReader(blob);
   const blobType = reader.readString();
   if (blobType !== type) {
-    throw new InvalidFormatError('Key type mismatch');
+    throw new InvalidFormatError("Key type mismatch");
   }
 
   return {
@@ -39,5 +39,5 @@ export function serializePublicKey(blob: SshPublicKeyBlob): string {
   if (blob.comment) {
     parts.push(blob.comment);
   }
-  return parts.join(' ');
+  return parts.join(" ");
 }

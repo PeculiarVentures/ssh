@@ -1,6 +1,6 @@
 # @peculiar/ssh
 
-[![CI](https://github.com/PeculiarVentures/ssh/actions/workflows/ci.yml/badge.svg)](https://github.com/PeculiarVentures/ssh/actions/workflows/ci.yml)
+[![Publish](https://github.com/PeculiarVentures/ssh/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/PeculiarVentures/ssh/actions/workflows/publish.yml)
 [![Coverage Status](https://coveralls.io/repos/github/PeculiarVentures/ssh/badge.svg?branch=main)](https://coveralls.io/github/PeculiarVentures/ssh?branch=main)
 
 A TypeScript library for working with SSH keys and certificates in both Node.js and browsers, built on top of WebCrypto. Provides parsing, serialization, conversion (SPKI/PKCS8 ↔ SSH), and certificate signing/verification with an extensible algorithm registry.
@@ -24,16 +24,16 @@ npm install @peculiar/ssh
 ### Generate Keys
 
 ```ts
-import { SSH } from '@peculiar/ssh';
+import { SSH } from "@peculiar/ssh";
 
 // RSA 2048
-const rsa = await SSH.createKeyPair({ name: 'rsa', modulusLength: 2048 });
+const rsa = await SSH.createKeyPair({ name: "rsa", modulusLength: 2048 });
 
 // Ed25519
-const ed = await SSH.createKeyPair('ed25519');
+const ed = await SSH.createKeyPair("ed25519");
 
 // ECDSA P-256
-const ec = await SSH.createKeyPair('ecdsa-p256');
+const ec = await SSH.createKeyPair("ecdsa-p256");
 ```
 
 ### Export and Import
@@ -52,13 +52,13 @@ const imported = await SSH.import(sshPublic);
 const data = new Uint8Array([1, 2, 3]);
 
 // Create SSH signature
-const signature = await SSH.sign('ssh-ed25519', ed.privateKey, data, {
-  format: 'ssh-signature',
+const signature = await SSH.sign("ssh-ed25519", ed.privateKey, data, {
+  format: "ssh-signature",
 });
 
 // Verify SSH signature
 const isValid = await SSH.verify(ed.publicKey, signature, data);
-console.log('Signature valid:', isValid);
+console.log("Signature valid:", isValid);
 ```
 
 ### Certificates
@@ -66,9 +66,9 @@ console.log('Signature valid:', isValid);
 ```ts
 // Create a certificate
 const cert = await SSH.createCertificate(ed.publicKey)
-  .setKeyId('user@example.com')
-  .addPrincipal('user@example.com')
-  .setType('user')
+  .setKeyId("user@example.com")
+  .addPrincipal("user@example.com")
+  .setType("user")
   .setValidity(Date.now(), Date.now() + 365 * 24 * 60 * 60 * 1000)
   .sign({
     signatureKey: rsa.publicKey,

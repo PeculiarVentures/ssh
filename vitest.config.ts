@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -6,13 +6,13 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'node',
-    include: ['src/**/*.spec.ts', 'tests/**/*.{test,spec}.ts'],
+    environment: "node",
+    include: ["src/**/*.spec.ts", "tests/**/*.{test,spec}.ts"],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'text-summary'],
-      include: ['src/**/*.ts', '!src/**/*.spec.ts'],
-      exclude: ['**/*.d.ts'],
+      provider: "v8",
+      reporter: ["text", "lcov", "text-summary"],
+      include: ["src/**/*.ts", "!src/**/*.spec.ts"],
+      exclude: ["**/*.d.ts"],
     },
   },
 });

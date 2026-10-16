@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { ecdsaP384Key, ecdsaP521Key } from '../../tests/utils/testFixtures';
-import { getCrypto } from '../crypto';
-import { AlgorithmRegistry } from '../registry';
-import { SshReader, SshWriter } from '../wire';
+import { describe, expect, it } from "vitest";
+import { ecdsaP384Key, ecdsaP521Key } from "../../tests/utils/testFixtures";
+import { getCrypto } from "../crypto";
+import { AlgorithmRegistry } from "../registry";
+import { SshReader, SshWriter } from "../wire";
 
-describe('ECDSA Algorithm', () => {
-  it('should parse ECDSA P-256 public key from certificate format', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
+describe("ECDSA Algorithm", () => {
+  it("should parse ECDSA P-256 public key from certificate format", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp256");
     expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-256
@@ -17,26 +17,26 @@ describe('ECDSA Algorithm', () => {
     }
 
     const writer = new SshWriter();
-    writer.writeString('nistp256'); // curve name
+    writer.writeString("nistp256"); // curve name
     writer.writeUint32(mockPubKey.length); // length
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
-    expect(publicKey.type).toBe('ecdsa-sha2-nistp256');
+    expect(publicKey.type).toBe("ecdsa-sha2-nistp256");
     expect(publicKey.keyData).toBeDefined();
 
     // Verify the parsed key can be imported
     const importReader = new SshReader(publicKey.keyData);
-    expect(importReader.readString()).toBe('ecdsa-sha2-nistp256');
-    expect(importReader.readString()).toBe('nistp256');
+    expect(importReader.readString()).toBe("ecdsa-sha2-nistp256");
+    expect(importReader.readString()).toBe("nistp256");
     const parsedPubKey = importReader.readMpInt();
     expect(new Uint8Array(parsedPubKey)).toEqual(mockPubKey);
   });
 
-  it('should parse ECDSA P-384 public key from certificate format', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+  it("should parse ECDSA P-384 public key from certificate format", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp384");
     expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-384
@@ -47,26 +47,26 @@ describe('ECDSA Algorithm', () => {
     }
 
     const writer = new SshWriter();
-    writer.writeString('nistp384'); // curve name
+    writer.writeString("nistp384"); // curve name
     writer.writeUint32(mockPubKey.length); // length
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
-    expect(publicKey.type).toBe('ecdsa-sha2-nistp384');
+    expect(publicKey.type).toBe("ecdsa-sha2-nistp384");
     expect(publicKey.keyData).toBeDefined();
 
     // Verify the parsed key can be imported
     const importReader = new SshReader(publicKey.keyData);
-    expect(importReader.readString()).toBe('ecdsa-sha2-nistp384');
-    expect(importReader.readString()).toBe('nistp384');
+    expect(importReader.readString()).toBe("ecdsa-sha2-nistp384");
+    expect(importReader.readString()).toBe("nistp384");
     const parsedPubKey = importReader.readMpInt();
     expect(new Uint8Array(parsedPubKey)).toEqual(mockPubKey);
   });
 
-  it('should parse ECDSA P-521 public key from certificate format', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+  it("should parse ECDSA P-521 public key from certificate format", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp521");
     expect(ecdsaBinding.parsePublicKey).toBeDefined();
 
     // Create mock certificate data for ECDSA P-521
@@ -77,26 +77,26 @@ describe('ECDSA Algorithm', () => {
     }
 
     const writer = new SshWriter();
-    writer.writeString('nistp521'); // curve name
+    writer.writeString("nistp521"); // curve name
     writer.writeUint32(mockPubKey.length); // length
     writer.writeBytes(mockPubKey); // public key point
 
     const reader = new SshReader(writer.toUint8Array());
     const publicKey = ecdsaBinding.parsePublicKey(reader);
 
-    expect(publicKey.type).toBe('ecdsa-sha2-nistp521');
+    expect(publicKey.type).toBe("ecdsa-sha2-nistp521");
     expect(publicKey.keyData).toBeDefined();
 
     // Verify the parsed key can be imported
     const importReader = new SshReader(publicKey.keyData);
-    expect(importReader.readString()).toBe('ecdsa-sha2-nistp521');
-    expect(importReader.readString()).toBe('nistp521');
+    expect(importReader.readString()).toBe("ecdsa-sha2-nistp521");
+    expect(importReader.readString()).toBe("nistp521");
     const parsedPubKey = importReader.readMpInt();
     expect(new Uint8Array(parsedPubKey)).toEqual(mockPubKey);
   });
 
-  it('should encode and decode SSH signature correctly for P-256', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp256');
+  it("should encode and decode SSH signature correctly for P-256", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp256");
     expect(ecdsaBinding.encodeSignature).toBeDefined();
     expect(ecdsaBinding.decodeSignature).toBeDefined();
 
@@ -109,7 +109,7 @@ describe('ECDSA Algorithm', () => {
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
-      algo: 'ecdsa-sha2-nistp256',
+      algo: "ecdsa-sha2-nistp256",
     });
 
     // Decode back
@@ -117,12 +117,12 @@ describe('ECDSA Algorithm', () => {
       signature: sshSignature,
     });
 
-    expect(decoded.algo).toBe('ecdsa-sha2-nistp256');
+    expect(decoded.algo).toBe("ecdsa-sha2-nistp256");
     expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
   });
 
-  it('should encode and decode SSH signature correctly for P-384', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+  it("should encode and decode SSH signature correctly for P-384", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp384");
     expect(ecdsaBinding.encodeSignature).toBeDefined();
     expect(ecdsaBinding.decodeSignature).toBeDefined();
 
@@ -135,7 +135,7 @@ describe('ECDSA Algorithm', () => {
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
-      algo: 'ecdsa-sha2-nistp384',
+      algo: "ecdsa-sha2-nistp384",
     });
 
     // Decode back
@@ -143,12 +143,12 @@ describe('ECDSA Algorithm', () => {
       signature: sshSignature,
     });
 
-    expect(decoded.algo).toBe('ecdsa-sha2-nistp384');
+    expect(decoded.algo).toBe("ecdsa-sha2-nistp384");
     expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
   });
 
-  it('should encode and decode SSH signature correctly for P-521', () => {
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+  it("should encode and decode SSH signature correctly for P-521", () => {
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp521");
     expect(ecdsaBinding.encodeSignature).toBeDefined();
     expect(ecdsaBinding.decodeSignature).toBeDefined();
 
@@ -161,7 +161,7 @@ describe('ECDSA Algorithm', () => {
     // Encode to SSH format
     const sshSignature = ecdsaBinding.encodeSignature({
       signature: mockSignature,
-      algo: 'ecdsa-sha2-nistp521',
+      algo: "ecdsa-sha2-nistp521",
     });
 
     // Decode back
@@ -169,18 +169,18 @@ describe('ECDSA Algorithm', () => {
       signature: sshSignature,
     });
 
-    expect(decoded.algo).toBe('ecdsa-sha2-nistp521');
+    expect(decoded.algo).toBe("ecdsa-sha2-nistp521");
     expect(new Uint8Array(decoded.signature)).toEqual(mockSignature);
   });
 
-  it('should import P-384 public key from SSH format', async () => {
+  it("should import P-384 public key from SSH format", async () => {
     const crypto = getCrypto();
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp384");
 
     // Parse the SSH key string to get the key data
-    const parsed = ecdsaP384Key.split(' ');
+    const parsed = ecdsaP384Key.split(" ");
     const base64Data = parsed[1];
-    const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+    const keyData = new Uint8Array(Buffer.from(base64Data, "base64"));
 
     // Import the public key
     const cryptoKey = await ecdsaBinding.importPublicSsh({
@@ -189,19 +189,19 @@ describe('ECDSA Algorithm', () => {
     });
 
     expect(cryptoKey).toBeDefined();
-    expect(cryptoKey.type).toBe('public');
-    expect((cryptoKey.algorithm as any).name).toBe('ECDSA');
-    expect((cryptoKey.algorithm as any).namedCurve).toBe('P-384');
+    expect(cryptoKey.type).toBe("public");
+    expect((cryptoKey.algorithm as any).name).toBe("ECDSA");
+    expect((cryptoKey.algorithm as any).namedCurve).toBe("P-384");
   });
 
-  it('should import P-521 public key from SSH format', async () => {
+  it("should import P-521 public key from SSH format", async () => {
     const crypto = getCrypto();
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp521");
 
     // Parse the SSH key string to get the key data
-    const parsed = ecdsaP521Key.split(' ');
+    const parsed = ecdsaP521Key.split(" ");
     const base64Data = parsed[1];
-    const keyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+    const keyData = new Uint8Array(Buffer.from(base64Data, "base64"));
 
     // Import the public key
     const cryptoKey = await ecdsaBinding.importPublicSsh({
@@ -210,19 +210,19 @@ describe('ECDSA Algorithm', () => {
     });
 
     expect(cryptoKey).toBeDefined();
-    expect(cryptoKey.type).toBe('public');
-    expect((cryptoKey.algorithm as any).name).toBe('ECDSA');
-    expect((cryptoKey.algorithm as any).namedCurve).toBe('P-521');
+    expect(cryptoKey.type).toBe("public");
+    expect((cryptoKey.algorithm as any).name).toBe("ECDSA");
+    expect((cryptoKey.algorithm as any).namedCurve).toBe("P-521");
   });
 
-  it('should round-trip P-384 public key import/export', async () => {
+  it("should round-trip P-384 public key import/export", async () => {
     const crypto = getCrypto();
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp384');
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp384");
 
     // Parse the SSH key string to get the key data
-    const parsed = ecdsaP384Key.split(' ');
+    const parsed = ecdsaP384Key.split(" ");
     const base64Data = parsed[1];
-    const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+    const originalKeyData = new Uint8Array(Buffer.from(base64Data, "base64"));
 
     // Import the public key
     const cryptoKey = await ecdsaBinding.importPublicSsh({
@@ -240,14 +240,14 @@ describe('ECDSA Algorithm', () => {
     expect(new Uint8Array(exportedKeyData)).toEqual(originalKeyData);
   });
 
-  it('should round-trip P-521 public key import/export', async () => {
+  it("should round-trip P-521 public key import/export", async () => {
     const crypto = getCrypto();
-    const ecdsaBinding = AlgorithmRegistry.get('ecdsa-sha2-nistp521');
+    const ecdsaBinding = AlgorithmRegistry.get("ecdsa-sha2-nistp521");
 
     // Parse the SSH key string to get the key data
-    const parsed = ecdsaP521Key.split(' ');
+    const parsed = ecdsaP521Key.split(" ");
     const base64Data = parsed[1];
-    const originalKeyData = new Uint8Array(Buffer.from(base64Data, 'base64'));
+    const originalKeyData = new Uint8Array(Buffer.from(base64Data, "base64"));
 
     // Import the public key
     const cryptoKey = await ecdsaBinding.importPublicSsh({
@@ -265,15 +265,9 @@ describe('ECDSA Algorithm', () => {
     expect(new Uint8Array(exportedKeyData)).toEqual(originalKeyData);
   });
 
-  it('should return correct certificate types', () => {
-    expect(AlgorithmRegistry.get('ecdsa-sha2-nistp256').getCertificateType?.()).toBe(
-      'ecdsa-sha2-nistp256-cert-v01@openssh.com',
-    );
-    expect(AlgorithmRegistry.get('ecdsa-sha2-nistp384').getCertificateType?.()).toBe(
-      'ecdsa-sha2-nistp384-cert-v01@openssh.com',
-    );
-    expect(AlgorithmRegistry.get('ecdsa-sha2-nistp521').getCertificateType?.()).toBe(
-      'ecdsa-sha2-nistp521-cert-v01@openssh.com',
-    );
+  it("should return correct certificate types", () => {
+    expect(AlgorithmRegistry.get("ecdsa-sha2-nistp256").getCertificateType?.()).toBe("ecdsa-sha2-nistp256-cert-v01@openssh.com");
+    expect(AlgorithmRegistry.get("ecdsa-sha2-nistp384").getCertificateType?.()).toBe("ecdsa-sha2-nistp384-cert-v01@openssh.com");
+    expect(AlgorithmRegistry.get("ecdsa-sha2-nistp521").getCertificateType?.()).toBe("ecdsa-sha2-nistp521-cert-v01@openssh.com");
   });
 });

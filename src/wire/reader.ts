@@ -1,5 +1,5 @@
-import { InvalidFormatError, UnexpectedEOFError } from '../errors.js';
-import { decoder } from '../utils';
+import { InvalidFormatError, UnexpectedEOFError } from "../errors.js";
+import { decoder } from "../utils";
 
 export class SshReader {
   private buffer: Uint8Array;
@@ -22,11 +22,7 @@ export class SshReader {
   }
 
   readUint32(): number {
-    const value =
-      (this.readUint8() << 24) |
-      (this.readUint8() << 16) |
-      (this.readUint8() << 8) |
-      this.readUint8();
+    const value = (this.readUint8() << 24) | (this.readUint8() << 16) | (this.readUint8() << 8) | this.readUint8();
     return value >>> 0; // Ensure unsigned
   }
 
@@ -114,9 +110,7 @@ export class SshReader {
    */
   seek(offset: number): void {
     if (offset < 0 || offset > this.buffer.length) {
-      throw new InvalidFormatError(
-        `Invalid offset: ${offset}. Buffer length: ${this.buffer.length}`,
-      );
+      throw new InvalidFormatError(`Invalid offset: ${offset}. Buffer length: ${this.buffer.length}`);
     }
     this.offset = offset;
   }

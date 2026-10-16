@@ -1,12 +1,8 @@
-import { toUint8Array } from '@peculiar/utils/bytes';
-import { base64url, hex } from '@peculiar/utils/encoding';
-import * as pem from '@peculiar/utils/pem';
+import { toUint8Array } from "@peculiar/utils/bytes";
+import { base64url, hex } from "@peculiar/utils/encoding";
+import * as pem from "@peculiar/utils/pem";
 
-import {
-  EncryptedKeyNotSupportedError,
-  InvalidKeyDataError,
-  InvalidPrivateKeyFormatError,
-} from '../errors';
+import { EncryptedKeyNotSupportedError, InvalidKeyDataError, InvalidPrivateKeyFormatError } from "../errors";
 import type {
   AlgorithmBinding,
   DecodeSshSignatureParams,
@@ -22,16 +18,16 @@ import type {
   ImportPublicSpkiParams,
   SignParams,
   VerifyParams,
-} from '../registry';
-import type { SshSignatureAlgorithm } from '../types';
-import type { SshPublicKeyBlob } from '../wire/public_key';
-import { SshReader } from '../wire/reader';
-import { SshWriter } from '../wire/writer';
+} from "../registry";
+import type { SshSignatureAlgorithm } from "../types";
+import type { SshPublicKeyBlob } from "../wire/public_key";
+import { SshReader } from "../wire/reader";
+import { SshWriter } from "../wire/writer";
 
 export class RsaBinding implements AlgorithmBinding {
-  private readonly hash: 'SHA-256' | 'SHA-512';
+  private readonly hash: "SHA-256" | "SHA-512";
 
-  constructor(hash: 'SHA-256' | 'SHA-512' = 'SHA-256') {
+  constructor(hash: "SHA-256" | "SHA-512" = "SHA-256") {
     this.hash = hash;
   }
 
@@ -50,29 +46,29 @@ export class RsaBinding implements AlgorithmBinding {
 
     // Create JWK
     const jwk = {
-      kty: 'RSA' as const,
+      kty: "RSA" as const,
       n: base64url.encode(n),
       e: base64url.encode(e),
     };
 
     return crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       jwk,
       {
-        name: 'RSASSA-PKCS1-v1_5',
+        name: "RSASSA-PKCS1-v1_5",
         hash: this.hash,
       },
       true,
-      ['verify'],
+      ["verify"],
     );
   }
 
   async exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    const jwk = await crypto.subtle.exportKey('jwk', publicKey);
+    const jwk = await crypto.subtle.exportKey("jwk", publicKey);
 
     if (!jwk.n || !jwk.e) {
-      throw new InvalidKeyDataError('RSA JWK missing required parameters (n, e)');
+      throw new InvalidKeyDataError("RSA JWK missing required parameters (n, e)");
     }
 
     // Decode base64url
@@ -80,7 +76,7 @@ export class RsaBinding implements AlgorithmBinding {
     const e = toUint8Array(base64url.decode(jwk.e));
 
     const writer = new SshWriter();
-    writer.writeString('ssh-rsa');
+    writer.writeString("ssh-rsa");
     writer.writeMpInt(e, true);
     writer.writeMpInt(n, true);
 
@@ -90,40 +86,40 @@ export class RsaBinding implements AlgorithmBinding {
   async importPublicSpki(params: ImportPublicSpkiParams): Promise<CryptoKey> {
     const { spki, crypto } = params;
     return crypto.subtle.importKey(
-      'spki',
+      "spki",
       spki as BufferSource,
       {
-        name: 'RSASSA-PKCS1-v1_5',
+        name: "RSASSA-PKCS1-v1_5",
         hash: this.hash,
       },
       true,
-      ['verify'],
+      ["verify"],
     );
   }
 
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    const spki = await crypto.subtle.exportKey("spki", publicKey);
     return toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
     const { pkcs8, crypto } = params;
     return crypto.subtle.importKey(
-      'pkcs8',
+      "pkcs8",
       pkcs8 as BufferSource,
       {
-        name: 'RSASSA-PKCS1-v1_5',
+        name: "RSASSA-PKCS1-v1_5",
         hash: this.hash,
       },
       true,
-      ['sign'],
+      ["sign"],
     );
   }
 
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
-    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", privateKey);
     return toUint8Array(pkcs8);
   }
 
@@ -131,13 +127,13 @@ export class RsaBinding implements AlgorithmBinding {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
-    const raw = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+    const raw = pem.decodeFirst(sshKey, "OPENSSH PRIVATE KEY");
     const reader = new SshReader(raw);
 
     // Check magic string
     const magic = reader.readBytes(15);
-    if (hex.encode(magic) !== '6f70656e7373682d6b65792d763100') {
-      throw new InvalidPrivateKeyFormatError('invalid magic string');
+    if (hex.encode(magic) !== "6f70656e7373682d6b65792d763100") {
+      throw new InvalidPrivateKeyFormatError("invalid magic string");
     }
 
     // Read cipher, kdf, and options
@@ -145,14 +141,14 @@ export class RsaBinding implements AlgorithmBinding {
     const _kdfName = reader.readString();
     const _kdfOptions = reader.readString();
 
-    if (_cipherName !== 'none') {
+    if (_cipherName !== "none") {
       throw new EncryptedKeyNotSupportedError(_cipherName);
     }
 
     // Read number of keys
     const numKeys = reader.readUint32();
     if (numKeys !== 1) {
-      throw new InvalidPrivateKeyFormatError('multiple keys not supported');
+      throw new InvalidPrivateKeyFormatError("multiple keys not supported");
     }
 
     // Skip public key (we don't need it for private key import)
@@ -170,7 +166,7 @@ export class RsaBinding implements AlgorithmBinding {
     const checkint1 = privateReader.readUint32();
     const checkint2 = privateReader.readUint32();
     if (checkint1 !== checkint2) {
-      throw new InvalidPrivateKeyFormatError('invalid checkints');
+      throw new InvalidPrivateKeyFormatError("invalid checkints");
     }
 
     // Skip key type (already known)
@@ -189,20 +185,20 @@ export class RsaBinding implements AlgorithmBinding {
 
     // Create JWK with all required parameters
     // Convert Uint8Array to BigInt for calculations
-    const dBig = BigInt('0x' + hex.encode(d));
-    const pBig = BigInt('0x' + hex.encode(p));
-    const qBig = BigInt('0x' + hex.encode(q));
+    const dBig = BigInt("0x" + hex.encode(d));
+    const pBig = BigInt("0x" + hex.encode(p));
+    const qBig = BigInt("0x" + hex.encode(q));
 
     // Calculate dp = d mod (p-1), dq = d mod (q-1)
     const dpBig = dBig % (pBig - 1n);
     const dqBig = dBig % (qBig - 1n);
 
     // Convert back to Uint8Array with proper padding
-    const dpBytes = hex.decode(dpBig.toString(16).padStart(p.length * 2, '0'));
-    const dqBytes = hex.decode(dqBig.toString(16).padStart(q.length * 2, '0'));
+    const dpBytes = hex.decode(dpBig.toString(16).padStart(p.length * 2, "0"));
+    const dqBytes = hex.decode(dqBig.toString(16).padStart(q.length * 2, "0"));
 
     const jwk = {
-      kty: 'RSA' as const,
+      kty: "RSA" as const,
       n: base64url.encode(n),
       e: base64url.encode(e),
       d: base64url.encode(d),
@@ -214,14 +210,14 @@ export class RsaBinding implements AlgorithmBinding {
     };
 
     return crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       jwk,
       {
-        name: 'RSASSA-PKCS1-v1_5',
+        name: "RSASSA-PKCS1-v1_5",
         hash: this.hash,
       },
       true,
-      ['sign'],
+      ["sign"],
     );
   }
 
@@ -229,9 +225,9 @@ export class RsaBinding implements AlgorithmBinding {
     const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to obtain all RSA parameters
-    const jwk = providedJwk || (await crypto.subtle.exportKey('jwk', privateKey));
+    const jwk = providedJwk || (await crypto.subtle.exportKey("jwk", privateKey));
     if (!jwk.n || !jwk.e || !jwk.d || !jwk.p || !jwk.q) {
-      throw new InvalidKeyDataError('RSA JWK missing required parameters');
+      throw new InvalidKeyDataError("RSA JWK missing required parameters");
     }
 
     const n = base64url.decode(jwk.n);
@@ -244,7 +240,7 @@ export class RsaBinding implements AlgorithmBinding {
     // Build the private key section as expected by importPrivateFromSsh
     // Order: ssh-rsa, n, e, d, iqmp, p, q
     const writer = new SshWriter();
-    writer.writeString('ssh-rsa');
+    writer.writeString("ssh-rsa");
     writer.writeMpInt(n, true);
     writer.writeMpInt(e, true);
     writer.writeMpInt(d, true);
@@ -265,11 +261,8 @@ export class RsaBinding implements AlgorithmBinding {
     return keyHash !== undefined && keyHash !== this.hash;
   }
 
-  private createHashMismatchError(
-    keyType: 'private' | 'public',
-    key: CryptoKey,
-  ): InvalidKeyDataError {
-    const keyHash = this.getKeyHashName(key) ?? 'an unknown hash';
+  private createHashMismatchError(keyType: "private" | "public", key: CryptoKey): InvalidKeyDataError {
+    const keyHash = this.getKeyHashName(key) ?? "an unknown hash";
     return new InvalidKeyDataError(
       `RSA ${keyType} key uses ${keyHash} but ${this.getSignatureAlgo()} requires ${this.hash}. The key is not extractable, so it cannot be re-imported with ${this.hash}.`,
     );
@@ -280,22 +273,20 @@ export class RsaBinding implements AlgorithmBinding {
 
     // Validate hash parameter for RSA algorithms
     if (hash && hash !== this.hash) {
-      throw new InvalidKeyDataError(
-        `Hash ${hash} not supported for ${this.getSignatureAlgo()}; expected ${this.hash}`,
-      );
+      throw new InvalidKeyDataError(`Hash ${hash} not supported for ${this.getSignatureAlgo()}; expected ${this.hash}`);
     }
 
     let keyToUse = privateKey;
     if (this.requiresReimport(privateKey)) {
       if (!privateKey.extractable) {
-        throw this.createHashMismatchError('private', privateKey);
+        throw this.createHashMismatchError("private", privateKey);
       }
 
       const pkcs8 = await this.exportPrivatePkcs8({ privateKey, crypto });
       keyToUse = await this.importPrivatePkcs8({ pkcs8: new Uint8Array(pkcs8), crypto });
     }
 
-    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyToUse, data as BufferSource);
+    const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keyToUse, data as BufferSource);
     return toUint8Array(signature);
   }
 
@@ -310,19 +301,14 @@ export class RsaBinding implements AlgorithmBinding {
     let keyToUse = publicKey;
     if (this.requiresReimport(publicKey)) {
       if (!publicKey.extractable) {
-        throw this.createHashMismatchError('public', publicKey);
+        throw this.createHashMismatchError("public", publicKey);
       }
 
       const spki = await this.exportPublicSpki({ publicKey, crypto });
       keyToUse = await this.importPublicSpki({ spki: new Uint8Array(spki), crypto });
     }
 
-    return crypto.subtle.verify(
-      'RSASSA-PKCS1-v1_5',
-      keyToUse,
-      signature as BufferSource,
-      data as BufferSource,
-    );
+    return crypto.subtle.verify("RSASSA-PKCS1-v1_5", keyToUse, signature as BufferSource, data as BufferSource);
   }
 
   encodeSignature(params: EncodeSshSignatureParams): Uint8Array {
@@ -344,7 +330,7 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   supportsCryptoKey(cryptoKey: CryptoKey): boolean {
-    return cryptoKey.algorithm.name === 'RSASSA-PKCS1-v1_5';
+    return cryptoKey.algorithm.name === "RSASSA-PKCS1-v1_5";
   }
 
   parsePublicKey(reader: SshReader): SshPublicKeyBlob {
@@ -354,12 +340,12 @@ export class RsaBinding implements AlgorithmBinding {
 
     // Reconstruct the public key blob in standard SSH format
     const writer = new SshWriter();
-    writer.writeString('ssh-rsa');
+    writer.writeString("ssh-rsa");
     writer.writeMpInt(publicKeyExponent);
     writer.writeMpInt(publicKeyModulus);
 
     return {
-      type: 'ssh-rsa',
+      type: "ssh-rsa",
       keyData: writer.toUint8Array(),
     };
   }
@@ -377,10 +363,10 @@ export class RsaBinding implements AlgorithmBinding {
   }
 
   getCertificateType(): string {
-    return 'ssh-rsa-cert-v01@openssh.com';
+    return "ssh-rsa-cert-v01@openssh.com";
   }
 
   getSignatureAlgo(): SshSignatureAlgorithm {
-    return this.hash === 'SHA-256' ? 'rsa-sha2-256' : 'rsa-sha2-512';
+    return this.hash === "SHA-256" ? "rsa-sha2-256" : "rsa-sha2-512";
   }
 }

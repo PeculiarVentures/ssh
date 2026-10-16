@@ -1,27 +1,16 @@
-import { base64 as base64Codec } from '@peculiar/utils/encoding';
-import { SshCertificateBuilder } from './cert/builder';
-import { SshCertificate } from './cert/certificate';
-import { getCrypto } from './crypto';
-import {
-  InvalidFormatError,
-  SshError,
-  UnsupportedAlgorithmError,
-  UnsupportedKeyTypeError,
-} from './errors';
-import { SshPrivateKey } from './key/private_key';
-import { SshPublicKey } from './key/public_key';
-import { SshSignature } from './signature';
-import type {
-  SshDigestAlgorithm,
-  SshKeyType,
-  SshObject,
-  SshSignatureFormat,
-  SshThumbprintFormat,
-} from './types';
-import { detectKeyType } from './utils';
+import { base64 as base64Codec } from "@peculiar/utils/encoding";
+import { SshCertificateBuilder } from "./cert/builder";
+import { SshCertificate } from "./cert/certificate";
+import { getCrypto } from "./crypto";
+import { InvalidFormatError, SshError, UnsupportedAlgorithmError, UnsupportedKeyTypeError } from "./errors";
+import { SshPrivateKey } from "./key/private_key";
+import { SshPublicKey } from "./key/public_key";
+import { SshSignature } from "./signature";
+import type { SshDigestAlgorithm, SshKeyType, SshObject, SshSignatureFormat, SshThumbprintFormat } from "./types";
+import { detectKeyType } from "./utils";
 
 export interface ImportOptions {
-  format?: 'ssh' | 'pkcs8' | 'spki' | 'signature';
+  format?: "ssh" | "pkcs8" | "spki" | "signature";
   type?: SshKeyType;
 }
 
@@ -35,16 +24,16 @@ export interface SshAlgorithm {
 }
 
 export interface RsaAlgorithm extends SshAlgorithm {
-  name: 'rsa';
+  name: "rsa";
   modulusLength?: 2048 | 3072 | 4096;
 }
 
 export interface Ed25519Algorithm extends SshAlgorithm {
-  name: 'ed25519';
+  name: "ed25519";
 }
 
 export interface EcdsaAlgorithm extends SshAlgorithm {
-  name: 'ecdsa-p256' | 'ecdsa-p384' | 'ecdsa-p521';
+  name: "ecdsa-p256" | "ecdsa-p384" | "ecdsa-p521";
 }
 
 export type SshAlgorithmIdentifier = string | RsaAlgorithm | Ed25519Algorithm | EcdsaAlgorithm;
@@ -61,11 +50,7 @@ export class SSH {
   /**
    * Import SSH key or certificate with automatic format detection
    */
-  static async import(
-    data: string | Uint8Array,
-    options: ImportOptions = {},
-    crypto = getCrypto(),
-  ): Promise<SshType> {
+  static async import(data: string | Uint8Array, options: ImportOptions = {}, crypto = getCrypto()): Promise<SshType> {
     const { format, type } = options;
 
     // If format is not specified, try to auto-detect
@@ -76,10 +61,10 @@ export class SSH {
 
     // Handle different formats
     switch (format) {
-      case 'ssh':
+      case "ssh":
         return SSH.importSshFormat(data as string, crypto);
 
-      case 'pkcs8': {
+      case "pkcs8": {
         // Try to auto-detect type from PKCS#8 data if not provided
         let keyType = type;
         if (!keyType && data instanceof Uint8Array) {
@@ -88,7 +73,7 @@ export class SSH {
           if (detectedType) {
             keyType = detectedType;
           }
-        } else if (!keyType && typeof data === 'string') {
+        } else if (!keyType && typeof data === "string") {
           // Convert PEM to DER and detect
           const derData = SSH.pemToDer(data);
           const detectedType = detectKeyType(derData);
@@ -98,16 +83,12 @@ export class SSH {
         }
 
         if (!keyType) {
-          throw new UnsupportedKeyTypeError('Key type must be specified for PKCS#8 import');
+          throw new UnsupportedKeyTypeError("Key type must be specified for PKCS#8 import");
         }
-        return SshPrivateKey.fromPKCS8(
-          typeof data === 'string' ? SSH.pemToDer(data) : data,
-          keyType,
-          crypto,
-        );
+        return SshPrivateKey.fromPKCS8(typeof data === "string" ? SSH.pemToDer(data) : data, keyType, crypto);
       }
 
-      case 'spki': {
+      case "spki": {
         // Try to auto-detect type from SPKI data if not provided
         let keyType = type;
         if (!keyType && data instanceof Uint8Array) {
@@ -116,7 +97,7 @@ export class SSH {
           if (detectedType) {
             keyType = detectedType;
           }
-        } else if (!keyType && typeof data === 'string') {
+        } else if (!keyType && typeof data === "string") {
           // Convert PEM to DER and detect
           const derData = SSH.pemToDer(data);
           const detectedType = detectKeyType(derData);
@@ -126,16 +107,12 @@ export class SSH {
         }
 
         if (!keyType) {
-          throw new UnsupportedKeyTypeError('Key type must be specified for SPKI import');
+          throw new UnsupportedKeyTypeError("Key type must be specified for SPKI import");
         }
-        return SshPublicKey.fromSPKI(
-          typeof data === 'string' ? SSH.pemToDer(data) : data,
-          keyType,
-          crypto,
-        );
+        return SshPublicKey.fromSPKI(typeof data === "string" ? SSH.pemToDer(data) : data, keyType, crypto);
       }
 
-      case 'signature':
+      case "signature":
         return SSH.importSignature(data);
 
       default:
@@ -146,95 +123,86 @@ export class SSH {
   /**
    * Create a new SSH key pair
    */
-  static async createKeyPair(
-    algorithm: SshAlgorithmIdentifier,
-    crypto = getCrypto(),
-  ): Promise<KeyPairResult> {
+  static async createKeyPair(algorithm: SshAlgorithmIdentifier, crypto = getCrypto()): Promise<KeyPairResult> {
     let keyPair: CryptoKeyPair;
     let sshType: SshKeyType;
 
     // Normalize algorithm to object form
-    const alg = typeof algorithm === 'string' ? { name: algorithm } : algorithm;
+    const alg = typeof algorithm === "string" ? { name: algorithm } : algorithm;
 
     switch (alg.name) {
-      case 'rsa': {
+      case "rsa": {
         const rsaAlg = alg as RsaAlgorithm;
         const modulusLength = rsaAlg.modulusLength ?? 2048;
 
         keyPair = await crypto.subtle.generateKey(
           {
-            name: 'RSASSA-PKCS1-v1_5',
+            name: "RSASSA-PKCS1-v1_5",
             modulusLength,
             publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-            hash: 'SHA-256',
+            hash: "SHA-256",
           },
           true,
-          ['sign', 'verify'],
+          ["sign", "verify"],
         );
-        sshType = 'ssh-rsa';
+        sshType = "ssh-rsa";
         break;
       }
 
-      case 'ed25519': {
+      case "ed25519": {
         keyPair = await crypto.subtle.generateKey(
           {
-            name: 'Ed25519',
-            namedCurve: 'Ed25519',
+            name: "Ed25519",
+            namedCurve: "Ed25519",
           },
           true,
-          ['sign', 'verify'],
+          ["sign", "verify"],
         );
-        sshType = 'ssh-ed25519';
+        sshType = "ssh-ed25519";
         break;
       }
 
-      case 'ecdsa-p256': {
+      case "ecdsa-p256": {
         keyPair = await crypto.subtle.generateKey(
           {
-            name: 'ECDSA',
-            namedCurve: 'P-256',
+            name: "ECDSA",
+            namedCurve: "P-256",
           },
           true,
-          ['sign', 'verify'],
+          ["sign", "verify"],
         );
-        sshType = 'ecdsa-sha2-nistp256';
+        sshType = "ecdsa-sha2-nistp256";
         break;
       }
 
-      case 'ecdsa-p384': {
+      case "ecdsa-p384": {
         keyPair = await crypto.subtle.generateKey(
           {
-            name: 'ECDSA',
-            namedCurve: 'P-384',
+            name: "ECDSA",
+            namedCurve: "P-384",
           },
           true,
-          ['sign', 'verify'],
+          ["sign", "verify"],
         );
-        sshType = 'ecdsa-sha2-nistp384';
+        sshType = "ecdsa-sha2-nistp384";
         break;
       }
 
-      case 'ecdsa-p521': {
+      case "ecdsa-p521": {
         keyPair = await crypto.subtle.generateKey(
           {
-            name: 'ECDSA',
-            namedCurve: 'P-521',
+            name: "ECDSA",
+            namedCurve: "P-521",
           },
           true,
-          ['sign', 'verify'],
+          ["sign", "verify"],
         );
-        sshType = 'ecdsa-sha2-nistp521';
+        sshType = "ecdsa-sha2-nistp521";
         break;
       }
 
       default:
-        throw new UnsupportedAlgorithmError(alg.name, [
-          'rsa',
-          'ed25519',
-          'ecdsa-p256',
-          'ecdsa-p384',
-          'ecdsa-p521',
-        ]);
+        throw new UnsupportedAlgorithmError(alg.name, ["rsa", "ed25519", "ecdsa-p256", "ecdsa-p384", "ecdsa-p521"]);
     }
 
     const privateKey = await SshPrivateKey.fromWebCrypto(keyPair.privateKey, sshType);
@@ -255,93 +223,90 @@ export class SSH {
    */
   private static pemToDer(pem: string): Uint8Array {
     const base64 = pem
-      .replace(/-----BEGIN [^-]+-----/, '')
-      .replace(/-----END [^-]+-----/, '')
-      .replace(/\s/g, '');
+      .replace(/-----BEGIN [^-]+-----/, "")
+      .replace(/-----END [^-]+-----/, "")
+      .replace(/\s/g, "");
     return base64Codec.decode(base64);
   }
 
   /**
    * Auto-detect format from data
    */
-  private static detectFormat(data: string | Uint8Array): 'ssh' | 'pkcs8' | 'spki' | 'signature' {
-    if (typeof data === 'string') {
+  private static detectFormat(data: string | Uint8Array): "ssh" | "pkcs8" | "spki" | "signature" {
+    if (typeof data === "string") {
       const trimmed = data.trim();
 
       // SSH certificate
-      if (trimmed.includes('-cert-v01@openssh.com')) {
-        return 'ssh';
+      if (trimmed.includes("-cert-v01@openssh.com")) {
+        return "ssh";
       }
 
       // SSH private key
-      if (trimmed.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----')) {
-        return 'ssh';
+      if (trimmed.startsWith("-----BEGIN OPENSSH PRIVATE KEY-----")) {
+        return "ssh";
       }
 
       // SSH public key
       if (/^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp\d+)\s+/.test(trimmed)) {
-        return 'ssh';
+        return "ssh";
       }
 
       // SSH SIGNATURE
-      if (trimmed.startsWith('-----BEGIN SSH SIGNATURE-----')) {
-        return 'signature';
+      if (trimmed.startsWith("-----BEGIN SSH SIGNATURE-----")) {
+        return "signature";
       }
 
       // PKCS#8 private key
-      if (trimmed.startsWith('-----BEGIN PRIVATE KEY-----')) {
-        return 'pkcs8';
+      if (trimmed.startsWith("-----BEGIN PRIVATE KEY-----")) {
+        return "pkcs8";
       }
 
       // SPKI public key
-      if (trimmed.startsWith('-----BEGIN PUBLIC KEY-----')) {
-        return 'spki';
+      if (trimmed.startsWith("-----BEGIN PUBLIC KEY-----")) {
+        return "spki";
       }
 
       // Assume base64 signature if it looks like base64 and not matched above
-      if (/^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s/g, '')) && trimmed.length > 20) {
-        return 'signature';
+      if (/^[A-Za-z0-9+/=]+$/.test(trimmed.replace(/\s/g, "")) && trimmed.length > 20) {
+        return "signature";
       }
 
       // Unknown string format
-      throw new SshError('Unable to detect string format');
+      throw new SshError("Unable to detect string format");
     } else {
       // Binary data - assume PKCS#8 or SPKI based on content analysis
       // This is a simplified heuristic
       if (data.length < 4 || data[0] !== 0x30) {
-        return 'pkcs8'; // Fallback for invalid or too short data
+        return "pkcs8"; // Fallback for invalid or too short data
       }
       // Parse SEQUENCE length (assume short form for simplicity)
       let seqLen: number;
       if (data[1] < 128) {
         seqLen = data[1];
       } else {
-        return 'pkcs8'; // Long form, fallback
+        return "pkcs8"; // Long form, fallback
       }
       if (2 + seqLen >= data.length) {
-        return 'pkcs8'; // Invalid length
+        return "pkcs8"; // Invalid length
       }
       const nextTag = data[2 + seqLen];
-      return nextTag === 0x02 ? 'pkcs8' : 'spki';
+      return nextTag === 0x02 ? "pkcs8" : "spki";
     }
   }
 
   /**
    * Import SSH format (private key, public key, or certificate)
    */
-  private static async importSshFormat(
-    data: string,
-    crypto = getCrypto(),
-  ): Promise<SshPrivateKey | SshPublicKey | SshCertificate> {
+  private static async importSshFormat(data: string, crypto = getCrypto()): Promise<SshPrivateKey | SshPublicKey | SshCertificate> {
     const trimmed = data.trim();
 
     // SSH certificate
-    if (trimmed.includes('-cert-v01@openssh.com')) {
+    if (trimmed.includes("-cert-v01@openssh.com")) {
       return SshCertificate.fromSSH(data);
     }
 
     // SSH private key
-    if (trimmed.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----')) {
+    if (trimmed.startsWith("-----BEGIN OPENSSH PRIVATE KEY-----")) {
       return SshPrivateKey.fromSSH(data);
     }
 
@@ -350,16 +315,16 @@ export class SSH {
       return SshPublicKey.fromSSH(data, crypto);
     }
 
-    throw new InvalidFormatError('Unable to detect SSH format type');
+    throw new InvalidFormatError("Unable to detect SSH format type");
   }
 
   /**
    * Import signature
    */
   private static importSignature(data: string | Uint8Array): SshSignature {
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       const trimmed = data.trim();
-      if (trimmed.startsWith('-----BEGIN SSH SIGNATURE-----')) {
+      if (trimmed.startsWith("-----BEGIN SSH SIGNATURE-----")) {
         return SshSignature.fromText(data);
       } else {
         // Assume base64 legacy signature
@@ -388,12 +353,7 @@ export class SSH {
   /**
    * Compute thumbprint of an SSH object
    */
-  static async thumbprint(
-    algorithm: SshDigestAlgorithm,
-    object: SshObject,
-    format: SshThumbprintFormat,
-    crypto = getCrypto(),
-  ): Promise<string> {
+  static async thumbprint(algorithm: SshDigestAlgorithm, object: SshObject, format: SshThumbprintFormat, crypto = getCrypto()): Promise<string> {
     let publicKey: SshPublicKey;
 
     if (object instanceof SshPublicKey) {
@@ -404,24 +364,24 @@ export class SSH {
       publicKey = object.publicKey;
     } else if (object instanceof SshSignature) {
       if (!object.publicKey) {
-        throw new SshError('Signature does not contain a public key');
+        throw new SshError("Signature does not contain a public key");
       }
       publicKey = object.publicKey;
     } else {
-      throw new SshError('Unsupported object type for thumbprint');
+      throw new SshError("Unsupported object type for thumbprint");
     }
 
     const hash = await publicKey.thumbprint(algorithm, crypto);
 
     switch (format) {
-      case 'hex':
+      case "hex":
         return Array.from(hash)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-      case 'base64':
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      case "base64":
         return base64Codec.encode(hash);
-      case 'ssh': {
-        const prefix = algorithm === 'sha256' ? 'SHA256' : 'SHA512';
+      case "ssh": {
+        const prefix = algorithm === "sha256" ? "SHA256" : "SHA512";
         return `${prefix}:${base64Codec.encode(hash)}`;
       }
       default:

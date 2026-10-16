@@ -1,5 +1,5 @@
-import { hex } from '@peculiar/utils/encoding';
-import type { SshKeyType } from './types';
+import { hex } from "@peculiar/utils/encoding";
+import type { SshKeyType } from "./types";
 
 // Reusable TextEncoder and TextDecoder instances
 export const encoder = new TextEncoder();
@@ -49,28 +49,25 @@ export function detectKeyType(data: Uint8Array): SshKeyType | null {
 
     // Map OIDs to SSH key types
     switch (oidHex) {
-      case '2a864886f70d010101': // RSA
-        return 'ssh-rsa';
-      case '2b6570': // Ed25519
-        return 'ssh-ed25519';
-      case '2a8648ce3d0201': // EC Public Key (need to check curve)
+      case "2a864886f70d010101": // RSA
+        return "ssh-rsa";
+      case "2b6570": // Ed25519
+        return "ssh-ed25519";
+      case "2a8648ce3d0201": // EC Public Key (need to check curve)
         // For EC keys, we need to read the curve OID
         // Skip to parameters (next OID after algorithm OID)
         if (data[offset + oidLength] === 0x06) {
           const curveOidLength = data[offset + oidLength + 1];
-          const curveOid = data.slice(
-            offset + oidLength + 2,
-            offset + oidLength + 2 + curveOidLength,
-          );
+          const curveOid = data.slice(offset + oidLength + 2, offset + oidLength + 2 + curveOidLength);
           const curveOidHex = hex.encode(curveOid);
 
           switch (curveOidHex) {
-            case '2a8648ce3d030107': // P-256
-              return 'ecdsa-sha2-nistp256';
-            case '2b81040022': // P-384
-              return 'ecdsa-sha2-nistp384';
-            case '2b81040023': // P-521
-              return 'ecdsa-sha2-nistp521';
+            case "2a8648ce3d030107": // P-256
+              return "ecdsa-sha2-nistp256";
+            case "2b81040022": // P-384
+              return "ecdsa-sha2-nistp384";
+            case "2b81040023": // P-521
+              return "ecdsa-sha2-nistp521";
           }
         }
         return null;
