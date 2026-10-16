@@ -2,7 +2,7 @@ import { getCrypto } from "../crypto";
 import { SshPublicKey } from "../key/public_key";
 import { AlgorithmRegistry } from "../registry";
 import { SshSignature } from "../signature";
-import { SshCertificateType, SshObject } from "../types";
+import { type SshCertificateType, SshObject } from "../types";
 import { parseCertificateData, parse as parseWireCertificate, serialize as serializeWireCertificate, type SshCertificateBlob, type SshCertificateData } from "../wire/certificate";
 import { SshReader } from "../wire/reader";
 

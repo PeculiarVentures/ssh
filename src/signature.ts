@@ -6,7 +6,7 @@ import { AlgorithmRegistry } from "./registry";
 import type { SshKeyType, SshSignatureAlgorithm, SshSignatureFormat } from "./types";
 import { SshObject } from "./types";
 import { SshReader } from "./wire/reader";
-import { parseSignature, serializeSignature, SshSignatureBlob } from "./wire/signature";
+import { parseSignature, serializeSignature, type SshSignatureBlob } from "./wire/signature";
 import { SshWriter } from "./wire/writer";
 
 export class SshSignature extends SshObject {
