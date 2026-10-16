@@ -28,32 +28,21 @@ npm run build
 
 ## CI/CD
 
-This project uses GitHub Actions for continuous integration and deployment:
+This project uses GitHub Actions:
 
-- **Testing**: Automated tests run on Node.js 22.x
-- **Code Coverage**: Coverage reports are generated and uploaded to [Coveralls](https://coveralls.io/github/PeculiarVentures/ssh)
-- **Linting**: oxlint and oxfmt checks ensure code quality
-- **Type Checking**: TypeScript compilation checks
-- **Release**: Version bump PRs with generated changelog; npm publishing, tags, and GitHub releases on merge
+- **Test** (`.github/workflows/test.yml`) runs on every pull request: lint, format, typecheck, build, exports check, and tests with coverage (uploaded to [Coveralls](https://coveralls.io/github/PeculiarVentures/ssh)).
+- **Publish** (`.github/workflows/publish.yml`) runs on every push to `main` and manages releases (see below).
 
-### Publishing
+### Releases
 
-Releases are done in two steps:
+Releases are managed by [release-please](https://github.com/googleapis/release-please) (`release-please-config.json`, `.release-please-manifest.json`):
 
-1. Run the **Version Bump** workflow (Actions → Version Bump → Run workflow) and pick `patch`, `minor`, or `major`.
-   It opens a `chore(release): vX.Y.Z` pull request that bumps `package.json`/`package-lock.json` and prepends a
-   `CHANGELOG.md` section generated with `conventional-changelog -p angular`.
-2. Review the version and changelog, then merge the pull request. The **Publish** workflow then:
-   - Runs lint, format, typecheck, tests, and build
-   - Publishes to npm via Trusted Publisher
-   - Pushes the `vX.Y.Z` tag and moves the major tag (e.g. `v1`)
-   - Creates a GitHub release from the matching `CHANGELOG.md` section
+1. On every push to `main`, the **Publish** workflow first runs lint, format, typecheck, tests, and build (the **Test** workflow). Only when they pass does release-please open or update a `chore(release): vX.Y.Z` pull request that bumps `package.json`/`package-lock.json`. The version comes from the commits: a breaking change bumps major, `feat` bumps minor, and `fix`, `perf`, `build`, and `revert` bump patch. Other types do not trigger a release.
+2. Merge the release pull request. release-please creates the `vX.Y.Z` tag and a GitHub Release with the notes from the pull request; the workflow then publishes that commit to npm via Trusted Publisher, with provenance, and moves the major tag (for example `v2`) when this is the newest release of that major.
 
-Publish runs only when no GitHub release exists for the current version, so a failed run can be re-run safely.
-Set the optional `RELEASE_TOKEN` secret (PAT or GitHub App token) so CI runs on the version bump pull request.
+To retry a failed npm publish, run **Publish** manually from the `vX.Y.Z` tag. Set the optional `RELEASE_TOKEN` secret (PAT or GitHub App token) so the Test workflow runs on the release pull request.
 
-Only `feat`, `fix`, `perf`, and breaking changes appear in the changelog. If a release contains none of them, edit
-the new `CHANGELOG.md` section in the version bump pull request before merging; Publish fails on an empty section.
+Release notes live only in [GitHub Releases](https://github.com/PeculiarVentures/ssh/releases); there is no `CHANGELOG.md`. Only `feat`, `fix`, `perf`, `build`, `revert`, and breaking changes are listed. Force a version with a `Release-As: x.y.z` line in a commit body. To fix the notes for a merged change, add a `BEGIN_COMMIT_OVERRIDE` … `END_COMMIT_OVERRIDE` block with the corrected commit message to that pull request's description; edits to the release pull request description are overwritten when new commits land.
 
 ## Development Workflow
 
