@@ -1,14 +1,16 @@
 # Test Fixtures
 
-This directory contains real SSH files used for testing the SSH library. Instead of hardcoding test data as strings in TypeScript files, we store actual SSH keys and certificates as files for better maintainability and realism.
+This directory contains real SSH files and test helpers used for testing the SSH library. Instead of hardcoding test data as strings in TypeScript files, we store actual SSH keys and certificates as files for better maintainability and realism.
 
 ## Usage
 
-The fixtures are loaded by `tests/utils/testFixtures.ts` which provides:
+The fixtures are loaded by `index.ts` in this directory which provides:
 
 - Individual exports for each key/certificate
 - Helper functions like `getAllKeys()` and `getAllCertificates()`
 - PKCS#8 encoded private keys for testing private key import
+
+`ssh_keygen.ts` runs the system `ssh-keygen` for the OpenSSH compatibility specs (`*.compat.spec.ts`). Both helpers use Node.js APIs and are only imported by specs; they are not part of the published package.
 
 ## Generating New Fixtures
 
@@ -44,9 +46,9 @@ The fixtures are loaded by `tests/utils/testFixtures.ts` which provides:
    ssh-keygen -s ca_key -I "test-cert" -n "testuser" -V "+52w" user_key.pub
    ```
 
-4. Copy the generated `.pub` files and certificate files directly to `fixtures/`
+4. Copy the generated `.pub` files and certificate files directly to `tests/fixtures/`
 
-5. Update `testFixtures.ts` if needed to include new fixtures
+5. Update `index.ts` if needed to include new fixtures
 
 ## Benefits
 

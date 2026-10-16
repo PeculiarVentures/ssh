@@ -1,5 +1,5 @@
 import { InvalidFormatError } from "../errors";
-import { SshSignatureFormat } from "../types";
+import type { SshSignatureFormat } from "../types";
 import { SshReader } from "./reader";
 import { SshWriter } from "./writer";
 

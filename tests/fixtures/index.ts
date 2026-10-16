@@ -4,18 +4,15 @@
  */
 
 import { readFileSync } from "fs";
-import { join } from "path";
-
-const fixturesDir = join(__dirname, "..", "fixtures");
 
 // Helper function to read fixture file
 function readFixture(filePath: string): string {
-  return readFileSync(join(fixturesDir, filePath), "utf8").trim();
+  return readFileSync(new URL(filePath, import.meta.url), "utf8").trim();
 }
 
 // Helper function to read fixture file as Uint8Array
 function readFixtureBinary(filePath: string): Uint8Array {
-  const content = readFileSync(join(fixturesDir, filePath), "utf8");
+  const content = readFileSync(new URL(filePath, import.meta.url), "utf8");
   // If it's PEM format, decode it
   if (content.includes("-----BEGIN")) {
     const base64 = content

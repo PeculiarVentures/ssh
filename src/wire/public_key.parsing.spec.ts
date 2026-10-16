@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parsePublicKey, serializePublicKey, SshReader } from "../src/wire";
-import { ecdsaP256Key, ecdsaP384Key, ecdsaP521Key, ed25519Key, getAllKeys, rsaKey } from "./utils/testFixtures";
+import { parsePublicKey, serializePublicKey, SshReader } from ".";
+import { ecdsaP256Key, ecdsaP384Key, ecdsaP521Key, ed25519Key, getAllKeys, rsaKey } from "../../tests/fixtures";
 
 describe("SSH Key Structure Parsing", () => {
   describe("Ed25519 Key Parsing", () => {
