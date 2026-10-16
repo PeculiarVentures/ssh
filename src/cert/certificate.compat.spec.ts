@@ -3,7 +3,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 import { SSH, SshCertificate } from "..";
-import { cleanupTempFiles, runSshKeygen } from "../fixtures/ssh_keygen";
+import { cleanupTempFiles, runSshKeygen } from "../../tests/fixtures/ssh_keygen";
 
 const tmpDirPath = tmpdir();
 

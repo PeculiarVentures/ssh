@@ -1,6 +1,6 @@
 import { base64 as base64Codec } from "@peculiar/utils/encoding";
 import { describe, expect, it } from "vitest";
-import { ecdsaP256Key, ecdsaP384Key, ecdsaP521Key, ed25519Key, rsaKey } from "../fixtures";
+import { ecdsaP256Key, ecdsaP384Key, ecdsaP521Key, ed25519Key, rsaKey } from "../../tests/fixtures";
 import { parsePublicKey, serializePublicKey } from "./public_key";
 import { SshWriter } from "./writer";
 

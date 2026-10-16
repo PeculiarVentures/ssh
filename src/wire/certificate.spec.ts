@@ -1,6 +1,6 @@
 import { base64 as base64Codec } from "@peculiar/utils/encoding";
 import { describe, expect, it } from "vitest";
-import { testUserEcdsa, testUserEd25519, testUserRsa } from "../fixtures";
+import { testUserEcdsa, testUserEd25519, testUserRsa } from "../../tests/fixtures";
 import { getCrypto } from "../crypto";
 import { AlgorithmRegistry } from "../registry";
 import { parse as parseCertificate, parseCertificateData, serialize as serializeCertificate } from "./certificate";

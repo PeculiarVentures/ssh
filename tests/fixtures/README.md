@@ -46,7 +46,7 @@ The fixtures are loaded by `index.ts` in this directory which provides:
    ssh-keygen -s ca_key -I "test-cert" -n "testuser" -V "+52w" user_key.pub
    ```
 
-4. Copy the generated `.pub` files and certificate files directly to `src/fixtures/`
+4. Copy the generated `.pub` files and certificate files directly to `tests/fixtures/`
 
 5. Update `index.ts` if needed to include new fixtures
 
