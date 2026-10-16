@@ -12,40 +12,34 @@ export type Dict<T = unknown> = Record<string, T>;
  * - Custom key types are not supported
  */
 export type SshKeyType =
-  | 'ssh-ed25519'
-  | 'ssh-rsa'
-  | 'ecdsa-sha2-nistp256'
-  | 'ecdsa-sha2-nistp384'
-  | 'ecdsa-sha2-nistp521'
-  | 'ssh-ed25519-cert-v01@openssh.com'
-  | 'ssh-rsa-cert-v01@openssh.com'
-  | 'ecdsa-sha2-nistp256-cert-v01@openssh.com'
-  | 'ecdsa-sha2-nistp384-cert-v01@openssh.com'
-  | 'ecdsa-sha2-nistp521-cert-v01@openssh.com';
+  | "ssh-ed25519"
+  | "ssh-rsa"
+  | "ecdsa-sha2-nistp256"
+  | "ecdsa-sha2-nistp384"
+  | "ecdsa-sha2-nistp521"
+  | "ssh-ed25519-cert-v01@openssh.com"
+  | "ssh-rsa-cert-v01@openssh.com"
+  | "ecdsa-sha2-nistp256-cert-v01@openssh.com"
+  | "ecdsa-sha2-nistp384-cert-v01@openssh.com"
+  | "ecdsa-sha2-nistp521-cert-v01@openssh.com";
 
 /**
  * SSH signature algorithms
  * Note: ssh-rsa is deprecated in favor of rsa-sha2-* variants
  */
-export type SshSignatureAlgorithm =
-  | 'ssh-ed25519'
-  | 'rsa-sha2-256'
-  | 'rsa-sha2-512'
-  | 'ecdsa-sha2-nistp256'
-  | 'ecdsa-sha2-nistp384'
-  | 'ecdsa-sha2-nistp521';
+export type SshSignatureAlgorithm = "ssh-ed25519" | "rsa-sha2-256" | "rsa-sha2-512" | "ecdsa-sha2-nistp256" | "ecdsa-sha2-nistp384" | "ecdsa-sha2-nistp521";
 
-export type SshDigestAlgorithm = 'sha256' | 'sha512';
+export type SshDigestAlgorithm = "sha256" | "sha512";
 
 /**
  * Export formats supported by the library
  */
-export type ExportFormat = 'ssh' | 'spki' | 'pkcs8';
+export type ExportFormat = "ssh" | "spki" | "pkcs8";
 
 /**
  * Hash algorithms supported for RSA signatures
  */
-export type HashAlgorithm = 'SHA-256' | 'SHA-512';
+export type HashAlgorithm = "SHA-256" | "SHA-512";
 
 /**
  * Abstract base class for all SSH objects
@@ -57,8 +51,8 @@ export abstract class SshObject {
   abstract toSSH(): Promise<string>;
 }
 
-export type SshCertificateType = 'user' | 'host';
+export type SshCertificateType = "user" | "host";
 
-export type SshThumbprintFormat = 'hex' | 'base64' | 'ssh';
+export type SshThumbprintFormat = "hex" | "base64" | "ssh";
 
-export type SshSignatureFormat = 'legacy' | 'ssh-signature';
+export type SshSignatureFormat = "legacy" | "ssh-signature";

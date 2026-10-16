@@ -1,12 +1,8 @@
-import { toUint8Array } from '@peculiar/utils/bytes';
-import { base64url, hex } from '@peculiar/utils/encoding';
-import * as pem from '@peculiar/utils/pem';
+import { toUint8Array } from "@peculiar/utils/bytes";
+import { base64url, hex } from "@peculiar/utils/encoding";
+import * as pem from "@peculiar/utils/pem";
 
-import {
-  EncryptedKeyNotSupportedError,
-  InvalidKeyDataError,
-  InvalidPrivateKeyFormatError,
-} from '../errors';
+import { EncryptedKeyNotSupportedError, InvalidKeyDataError, InvalidPrivateKeyFormatError } from "../errors";
 import type {
   AlgorithmBinding,
   DecodeSshSignatureParams,
@@ -22,11 +18,11 @@ import type {
   ImportPublicSpkiParams,
   SignParams,
   VerifyParams,
-} from '../registry';
-import type { SshSignatureAlgorithm } from '../types';
-import type { SshPublicKeyBlob } from '../wire/public_key';
-import { SshReader } from '../wire/reader';
-import { SshWriter } from '../wire/writer';
+} from "../registry";
+import type { SshSignatureAlgorithm } from "../types";
+import type { SshPublicKeyBlob } from "../wire/public_key";
+import { SshReader } from "../wire/reader";
+import { SshWriter } from "../wire/writer";
 
 export class EcdsaBinding implements AlgorithmBinding {
   private curveName: string;
@@ -42,16 +38,16 @@ export class EcdsaBinding implements AlgorithmBinding {
   /**
    * Get the hash algorithm for this ECDSA curve
    */
-  private getHashAlgorithm(): 'SHA-256' | 'SHA-384' | 'SHA-512' {
+  private getHashAlgorithm(): "SHA-256" | "SHA-384" | "SHA-512" {
     switch (this.namedCurve) {
-      case 'P-256':
-        return 'SHA-256';
-      case 'P-384':
-        return 'SHA-384';
-      case 'P-521':
-        return 'SHA-512';
+      case "P-256":
+        return "SHA-256";
+      case "P-384":
+        return "SHA-384";
+      case "P-521":
+        return "SHA-512";
       default:
-        return 'SHA-256'; // fallback
+        return "SHA-256"; // fallback
     }
   }
 
@@ -60,11 +56,11 @@ export class EcdsaBinding implements AlgorithmBinding {
    */
   private getExpectedLength(): number {
     switch (this.namedCurve) {
-      case 'P-256':
+      case "P-256":
         return 32;
-      case 'P-384':
+      case "P-384":
         return 48;
-      case 'P-521':
+      case "P-521":
         return 66;
       default:
         return 32; // fallback
@@ -98,30 +94,30 @@ export class EcdsaBinding implements AlgorithmBinding {
     // Calculate coordinate length based on curve (similar to importPrivateFromSsh)
     const coordLength = Math.floor((q.length - 1) / 2);
     const jwk = {
-      kty: 'EC' as const,
+      kty: "EC" as const,
       crv: this.namedCurve,
       x: base64url.encode(q.slice(1, 1 + coordLength)), // x coordinate
       y: base64url.encode(q.slice(1 + coordLength)), // y coordinate
     };
 
     return crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       jwk,
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         namedCurve: this.namedCurve,
       },
       true,
-      ['verify'],
+      ["verify"],
     );
   }
 
   async exportPublicSsh(params: ExportPublicToSshParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    const jwk = await crypto.subtle.exportKey('jwk', publicKey);
+    const jwk = await crypto.subtle.exportKey("jwk", publicKey);
 
     if (!jwk.x || !jwk.y) {
-      throw new InvalidKeyDataError('ECDSA JWK missing x or y parameters');
+      throw new InvalidKeyDataError("ECDSA JWK missing x or y parameters");
     }
 
     // Decode base64url
@@ -145,40 +141,40 @@ export class EcdsaBinding implements AlgorithmBinding {
   async importPublicSpki(params: ImportPublicSpkiParams): Promise<CryptoKey> {
     const { spki, crypto } = params;
     return crypto.subtle.importKey(
-      'spki',
+      "spki",
       spki as BufferSource,
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         namedCurve: this.namedCurve,
       },
       true,
-      ['verify'],
+      ["verify"],
     );
   }
 
   async exportPublicSpki(params: ExportPublicSpkiParams): Promise<Uint8Array> {
     const { publicKey, crypto } = params;
-    const spki = await crypto.subtle.exportKey('spki', publicKey);
+    const spki = await crypto.subtle.exportKey("spki", publicKey);
     return toUint8Array(spki);
   }
 
   async importPrivatePkcs8(params: ImportPrivatePkcs8Params): Promise<CryptoKey> {
     const { pkcs8, crypto } = params;
     return crypto.subtle.importKey(
-      'pkcs8',
+      "pkcs8",
       pkcs8 as BufferSource,
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         namedCurve: this.namedCurve,
       },
       true,
-      ['sign'],
+      ["sign"],
     );
   }
 
   async exportPrivatePkcs8(params: ExportPrivatePkcs8Params): Promise<Uint8Array> {
     const { privateKey, crypto } = params;
-    const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", privateKey);
     return toUint8Array(pkcs8);
   }
 
@@ -186,9 +182,9 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { privateKey, crypto, jwk: providedJwk } = params;
 
     // Export private key to JWK to get all parameters
-    const jwk = providedJwk || (await crypto.subtle.exportKey('jwk', privateKey));
+    const jwk = providedJwk || (await crypto.subtle.exportKey("jwk", privateKey));
     if (!jwk.d || !jwk.x || !jwk.y) {
-      throw new InvalidKeyDataError('ECDSA private key JWK missing required parameters');
+      throw new InvalidKeyDataError("ECDSA private key JWK missing required parameters");
     }
 
     // Decode coordinates
@@ -216,13 +212,13 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { sshKey, crypto } = params;
 
     // Remove PEM headers and decode base64
-    const raw = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+    const raw = pem.decodeFirst(sshKey, "OPENSSH PRIVATE KEY");
     const reader = new SshReader(raw);
 
     // Check magic string
     const magic = reader.readBytes(15);
-    if (hex.encode(magic) !== '6f70656e7373682d6b65792d763100') {
-      throw new InvalidPrivateKeyFormatError('invalid magic string');
+    if (hex.encode(magic) !== "6f70656e7373682d6b65792d763100") {
+      throw new InvalidPrivateKeyFormatError("invalid magic string");
     }
 
     // Read cipher, kdf, and options
@@ -230,14 +226,14 @@ export class EcdsaBinding implements AlgorithmBinding {
     const _kdfName = reader.readString();
     const _kdfOptions = reader.readString();
 
-    if (_cipherName !== 'none') {
+    if (_cipherName !== "none") {
       throw new EncryptedKeyNotSupportedError(_cipherName);
     }
 
     // Read number of keys
     const numKeys = reader.readUint32();
     if (numKeys !== 1) {
-      throw new InvalidPrivateKeyFormatError('multiple keys not supported');
+      throw new InvalidPrivateKeyFormatError("multiple keys not supported");
     }
 
     // Skip public key
@@ -254,7 +250,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const checkint1 = privateReader.readUint32();
     const checkint2 = privateReader.readUint32();
     if (checkint1 !== checkint2) {
-      throw new InvalidPrivateKeyFormatError('invalid checkints');
+      throw new InvalidPrivateKeyFormatError("invalid checkints");
     }
 
     // Skip key type
@@ -274,7 +270,7 @@ export class EcdsaBinding implements AlgorithmBinding {
 
     // Extract x and y from public key point (uncompressed format: 0x04 + x + y)
     if (publicKeyPoint[0] !== 0x04) {
-      throw new InvalidKeyDataError('invalid ECDSA public key point format');
+      throw new InvalidKeyDataError("invalid ECDSA public key point format");
     }
 
     // Calculate coordinate length based on curve
@@ -284,7 +280,7 @@ export class EcdsaBinding implements AlgorithmBinding {
 
     // Create JWK
     const jwk = {
-      kty: 'EC' as const,
+      kty: "EC" as const,
       crv: this.namedCurve,
       x: base64url.encode(x),
       y: base64url.encode(y),
@@ -292,14 +288,14 @@ export class EcdsaBinding implements AlgorithmBinding {
     };
 
     return crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       jwk,
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         namedCurve: this.namedCurve,
       },
       true,
-      ['sign'],
+      ["sign"],
     );
   }
 
@@ -311,14 +307,12 @@ export class EcdsaBinding implements AlgorithmBinding {
 
     // Validate hash parameter if provided
     if (hash && hash !== expectedHash) {
-      throw new InvalidKeyDataError(
-        `ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`,
-      );
+      throw new InvalidKeyDataError(`ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`);
     }
 
     const signature = await crypto.subtle.sign(
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         hash: expectedHash,
       },
       privateKey,
@@ -335,14 +329,12 @@ export class EcdsaBinding implements AlgorithmBinding {
 
     // Validate hash parameter if provided
     if (hash && hash !== expectedHash) {
-      throw new InvalidKeyDataError(
-        `ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`,
-      );
+      throw new InvalidKeyDataError(`ECDSA ${this.namedCurve} requires ${expectedHash}, got ${hash}`);
     }
 
     return crypto.subtle.verify(
       {
-        name: 'ECDSA',
+        name: "ECDSA",
         hash: expectedHash,
       },
       publicKey,
@@ -355,7 +347,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const { signature, algo } = params;
 
     // For ECDSA, convert from raw format to SSH format (r+s)
-    if (algo.startsWith('ecdsa-sha2-')) {
+    if (algo.startsWith("ecdsa-sha2-")) {
       // Split concatenated r+s back into components
       const coordLength = this.getSignatureCoordLength();
       const r = signature.subarray(0, coordLength);
@@ -390,7 +382,7 @@ export class EcdsaBinding implements AlgorithmBinding {
     const sig = reader.readBytes(sigLength);
 
     // For ECDSA, convert from SSH format (r+s) to raw format for WebCrypto
-    if (algo.startsWith('ecdsa-sha2-')) {
+    if (algo.startsWith("ecdsa-sha2-")) {
       const sigReader = new SshReader(sig);
       let r = sigReader.readMpInt();
       let s = sigReader.readMpInt();
@@ -429,19 +421,14 @@ export class EcdsaBinding implements AlgorithmBinding {
   }
 
   supportsCryptoKey(cryptoKey: CryptoKey): boolean {
-    return (
-      cryptoKey.algorithm.name === 'ECDSA' &&
-      (cryptoKey.algorithm as any).namedCurve === this.namedCurve
-    );
+    return cryptoKey.algorithm.name === "ECDSA" && (cryptoKey.algorithm as any).namedCurve === this.namedCurve;
   }
 
   parsePublicKey(reader: SshReader): SshPublicKeyBlob {
     // Read ECDSA public key from certificate format
     const curveName = reader.readString();
     if (curveName !== this.curveName) {
-      throw new InvalidKeyDataError(
-        `ECDSA certificate curve name ${curveName}, expected ${this.curveName}`,
-      );
+      throw new InvalidKeyDataError(`ECDSA certificate curve name ${curveName}, expected ${this.curveName}`);
     }
     const publicKeyPoint = reader.readBytes(reader.readUint32()); // ECDSA point
 
@@ -478,6 +465,6 @@ export class EcdsaBinding implements AlgorithmBinding {
 }
 
 // Create instances for each curve
-export const EcdsaP256Binding = new EcdsaBinding('nistp256', 'ecdsa-sha2-nistp256', 'P-256');
-export const EcdsaP384Binding = new EcdsaBinding('nistp384', 'ecdsa-sha2-nistp384', 'P-384');
-export const EcdsaP521Binding = new EcdsaBinding('nistp521', 'ecdsa-sha2-nistp521', 'P-521');
+export const EcdsaP256Binding = new EcdsaBinding("nistp256", "ecdsa-sha2-nistp256", "P-256");
+export const EcdsaP384Binding = new EcdsaBinding("nistp384", "ecdsa-sha2-nistp384", "P-384");
+export const EcdsaP521Binding = new EcdsaBinding("nistp521", "ecdsa-sha2-nistp521", "P-521");

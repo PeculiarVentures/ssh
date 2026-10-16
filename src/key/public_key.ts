@@ -1,18 +1,14 @@
-import { getCrypto } from '../crypto';
-import { UnsupportedKeyTypeError } from '../errors';
-import { AlgorithmRegistry } from '../registry';
-import type { SshDigestAlgorithm, SshKeyType } from '../types';
-import { SshObject } from '../types';
-import {
-  parsePublicKey as parseWirePublicKey,
-  serializePublicKey as serializeWirePublicKey,
-  type SshPublicKeyBlob,
-} from '../wire/public_key';
+import { getCrypto } from "../crypto";
+import { UnsupportedKeyTypeError } from "../errors";
+import { AlgorithmRegistry } from "../registry";
+import type { SshDigestAlgorithm, SshKeyType } from "../types";
+import { SshObject } from "../types";
+import { parsePublicKey as parseWirePublicKey, serializePublicKey as serializeWirePublicKey, type SshPublicKeyBlob } from "../wire/public_key";
 
-export type SshPublicKeyExportFormat = 'ssh' | 'spki';
+export type SshPublicKeyExportFormat = "ssh" | "spki";
 
 export class SshPublicKey extends SshObject {
-  public static readonly TYPE = 'public-key';
+  public static readonly TYPE = "public-key";
   public readonly type = SshPublicKey.TYPE;
 
   private blob: SshPublicKeyBlob;
@@ -44,11 +40,7 @@ export class SshPublicKey extends SshObject {
     return new SshPublicKey(blob);
   }
 
-  static async fromSPKI(
-    spki: Uint8Array,
-    type: SshKeyType,
-    crypto = getCrypto(),
-  ): Promise<SshPublicKey> {
+  static async fromSPKI(spki: Uint8Array, type: SshKeyType, crypto = getCrypto()): Promise<SshPublicKey> {
     const binding = AlgorithmRegistry.get(type);
 
     const cryptoKey = await binding.importPublicSpki({ spki, crypto });
@@ -61,11 +53,7 @@ export class SshPublicKey extends SshObject {
     return new SshPublicKey(blob);
   }
 
-  static async fromWebCrypto(
-    cryptoKey: CryptoKey,
-    type?: SshKeyType,
-    crypto = getCrypto(),
-  ): Promise<SshPublicKey> {
+  static async fromWebCrypto(cryptoKey: CryptoKey, type?: SshKeyType, crypto = getCrypto()): Promise<SshPublicKey> {
     // Auto-detect SSH key type from CryptoKey if not provided
     const sshType = type || (AlgorithmRegistry.getSshTypeFromCryptoKey(cryptoKey) as SshKeyType);
 
@@ -80,13 +68,10 @@ export class SshPublicKey extends SshObject {
     return new SshPublicKey(blob);
   }
 
-  async export(
-    format: SshPublicKeyExportFormat = 'ssh',
-    crypto = getCrypto(),
-  ): Promise<string | Uint8Array> {
-    if (format === 'ssh') {
+  async export(format: SshPublicKeyExportFormat = "ssh", crypto = getCrypto()): Promise<string | Uint8Array> {
+    if (format === "ssh") {
       return serializeWirePublicKey(this.blob);
-    } else if (format === 'spki') {
+    } else if (format === "spki") {
       const cryptoKey = await this.getCryptoKey(crypto);
       const binding = AlgorithmRegistry.get(this.blob.type);
       const spki = await binding.exportPublicSpki({ publicKey: cryptoKey, crypto });
@@ -101,7 +86,7 @@ export class SshPublicKey extends SshObject {
    * (e.g., "ssh-rsa AAAAB3NzaC1yc2E...").
    */
   async toSSH(): Promise<string> {
-    const result = await this.export('ssh');
+    const result = await this.export("ssh");
     return result as string;
   }
 
@@ -110,7 +95,7 @@ export class SshPublicKey extends SshObject {
    * Returns binary DER-encoded SPKI data as Uint8Array.
    */
   async toSPKI(): Promise<Uint8Array> {
-    const result = await this.export('spki');
+    const result = await this.export("spki");
     return result as Uint8Array;
   }
 
@@ -124,12 +109,7 @@ export class SshPublicKey extends SshObject {
   /**
    * Verify raw signature
    */
-  async verify(
-    algorithm: string,
-    signature: Uint8Array,
-    data: Uint8Array,
-    crypto = getCrypto(),
-  ): Promise<boolean> {
+  async verify(algorithm: string, signature: Uint8Array, data: Uint8Array, crypto = getCrypto()): Promise<boolean> {
     // Get binding for the signature algorithm
     const binding = AlgorithmRegistry.get(algorithm);
 
@@ -167,11 +147,8 @@ export class SshPublicKey extends SshObject {
   /**
    * Compute thumbprint of the public key
    */
-  async thumbprint(
-    algorithm: SshDigestAlgorithm = 'sha256',
-    crypto = getCrypto(),
-  ): Promise<Uint8Array> {
-    const hashAlgorithm = algorithm === 'sha256' ? 'SHA-256' : 'SHA-512';
+  async thumbprint(algorithm: SshDigestAlgorithm = "sha256", crypto = getCrypto()): Promise<Uint8Array> {
+    const hashAlgorithm = algorithm === "sha256" ? "SHA-256" : "SHA-512";
     const data = this.blob.keyData as BufferSource;
     const hash = await crypto.subtle.digest(hashAlgorithm, data);
     return new Uint8Array(hash);

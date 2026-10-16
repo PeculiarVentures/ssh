@@ -1,9 +1,9 @@
-import { getCrypto } from '../crypto';
-import { SshPublicKey } from '../key/public_key';
-import { AlgorithmRegistry } from '../registry';
-import type { SshCertificateType, SshKeyType, SshSignatureAlgorithm } from '../types';
-import { createCertificateData } from '../wire/certificate';
-import { SshCertificate } from './certificate';
+import { getCrypto } from "../crypto";
+import { SshPublicKey } from "../key/public_key";
+import { AlgorithmRegistry } from "../registry";
+import type { SshCertificateType, SshKeyType, SshSignatureAlgorithm } from "../types";
+import { createCertificateData } from "../wire/certificate";
+import { SshCertificate } from "./certificate";
 
 export type SshValidityInput = bigint | number | Date;
 
@@ -29,8 +29,8 @@ export interface SshCertificateSignOptions {
 export class SshCertificateBuilder {
   private publicKey: SshPublicKey;
   private serial = 0n;
-  private type: SshCertificateType = 'user';
-  private keyId = '';
+  private type: SshCertificateType = "user";
+  private keyId = "";
   private validPrincipals: string[] = [];
   private validAfter = 0n;
   private validBefore = 0n;
@@ -53,7 +53,7 @@ export class SshCertificateBuilder {
   private toBigIntTimestamp(value: SshValidityInput): bigint {
     if (value instanceof Date) {
       return BigInt(Math.floor(value.getTime() / 1000));
-    } else if (typeof value === 'number') {
+    } else if (typeof value === "number") {
       return BigInt(value);
     } else {
       return value;
@@ -159,11 +159,11 @@ export class SshCertificateBuilder {
    */
   setExtensionsDefault(): this {
     this.extensions = {
-      'permit-X11-forwarding': '',
-      'permit-agent-forwarding': '',
-      'permit-port-forwarding': '',
-      'permit-pty': '',
-      'permit-user-rc': '',
+      "permit-X11-forwarding": "",
+      "permit-agent-forwarding": "",
+      "permit-port-forwarding": "",
+      "permit-pty": "",
+      "permit-user-rc": "",
     };
     return this;
   }

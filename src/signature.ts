@@ -1,16 +1,16 @@
-import { base64 as base64Codec } from '@peculiar/utils/encoding';
-import { getCrypto } from './crypto';
-import { SshPrivateKey } from './key/private_key';
-import { SshPublicKey } from './key/public_key';
-import { AlgorithmRegistry } from './registry';
-import type { SshKeyType, SshSignatureAlgorithm, SshSignatureFormat } from './types';
-import { SshObject } from './types';
-import { SshReader } from './wire/reader';
-import { parseSignature, serializeSignature, SshSignatureBlob } from './wire/signature';
-import { SshWriter } from './wire/writer';
+import { base64 as base64Codec } from "@peculiar/utils/encoding";
+import { getCrypto } from "./crypto";
+import { SshPrivateKey } from "./key/private_key";
+import { SshPublicKey } from "./key/public_key";
+import { AlgorithmRegistry } from "./registry";
+import type { SshKeyType, SshSignatureAlgorithm, SshSignatureFormat } from "./types";
+import { SshObject } from "./types";
+import { SshReader } from "./wire/reader";
+import { parseSignature, serializeSignature, SshSignatureBlob } from "./wire/signature";
+import { SshWriter } from "./wire/writer";
 
 export class SshSignature extends SshObject {
-  public static readonly TYPE = 'signature';
+  public static readonly TYPE = "signature";
   public readonly type = SshSignature.TYPE;
 
   private blob: SshSignatureBlob;
@@ -69,9 +69,9 @@ export class SshSignature extends SshObject {
    */
   static fromText(text: string): SshSignature {
     const base64 = text
-      .replace(/-----BEGIN SSH SIGNATURE-----/, '')
-      .replace(/-----END SSH SIGNATURE-----/, '')
-      .replace(/[\r\n\s]/g, '');
+      .replace(/-----BEGIN SSH SIGNATURE-----/, "")
+      .replace(/-----END SSH SIGNATURE-----/, "")
+      .replace(/[\r\n\s]/g, "");
     return SshSignature.fromBase64(base64);
   }
 
@@ -100,7 +100,7 @@ export class SshSignature extends SshObject {
       lines.push(base64.substring(i, i + 70));
     }
 
-    return ['-----BEGIN SSH SIGNATURE-----', ...lines, '-----END SSH SIGNATURE-----'].join('\n');
+    return ["-----BEGIN SSH SIGNATURE-----", ...lines, "-----END SSH SIGNATURE-----"].join("\n");
   }
 
   async toSSH(): Promise<string> {
@@ -112,19 +112,19 @@ export class SshSignature extends SshObject {
    */
   async verify(data: Uint8Array, publicKey: SshPublicKey): Promise<boolean> {
     const binding = AlgorithmRegistry.get(this.algorithm);
-    const cryptoKey = await publicKey['getCryptoKey']();
+    const cryptoKey = await publicKey["getCryptoKey"]();
     const crypto = getCrypto();
 
     let dataToVerify = data;
 
     // For SSH SIGNATURE format, compute the data to be signed according to spec
-    if (this.format === 'ssh-signature') {
-      const hashAlg = this.hashAlgorithm || 'sha512';
-      const namespace = this.namespace || 'file';
-      const reserved = this.reserved || '';
+    if (this.format === "ssh-signature") {
+      const hashAlg = this.hashAlgorithm || "sha512";
+      const namespace = this.namespace || "file";
+      const reserved = this.reserved || "";
 
       // Step 1: Hash the original message with the specified hash algorithm
-      const hashAlgorithm = hashAlg === 'sha256' ? 'SHA-256' : 'SHA-512';
+      const hashAlgorithm = hashAlg === "sha256" ? "SHA-256" : "SHA-512";
       const messageHash = await crypto.subtle.digest(hashAlgorithm, data as BufferSource);
       const messageHashBytes = new Uint8Array(messageHash);
 
@@ -133,7 +133,7 @@ export class SshSignature extends SshObject {
       const writer = new SshWriter();
 
       // Magic string (6 bytes)
-      writer.writeBytes(new TextEncoder().encode('SSHSIG'));
+      writer.writeBytes(new TextEncoder().encode("SSHSIG"));
 
       // Namespace (as SSH string)
       writer.writeString(namespace);
@@ -152,15 +152,15 @@ export class SshSignature extends SshObject {
     }
 
     // For RSA algorithms, determine the correct hash algorithm
-    let hashAlgorithm: 'SHA-256' | 'SHA-512' | undefined;
-    if (this.algorithm === 'rsa-sha2-256') {
-      hashAlgorithm = 'SHA-256';
-    } else if (this.algorithm === 'rsa-sha2-512') {
-      hashAlgorithm = 'SHA-512';
+    let hashAlgorithm: "SHA-256" | "SHA-512" | undefined;
+    if (this.algorithm === "rsa-sha2-256") {
+      hashAlgorithm = "SHA-256";
+    } else if (this.algorithm === "rsa-sha2-512") {
+      hashAlgorithm = "SHA-512";
     }
 
     let signatureToVerify: Uint8Array;
-    if (this.format === 'legacy' || this.format === 'ssh-signature') {
+    if (this.format === "legacy" || this.format === "ssh-signature") {
       // Decode the SSH signature to get the proper format for WebCrypto
       // Create wire format for decodeSshSignature (algorithm + length + signature bytes)
       const sigWriter = new SshWriter();
@@ -203,7 +203,7 @@ export class SshSignature extends SshObject {
     const signatureData = sigReader.readBytes(sigLength);
 
     return new SshSignature({
-      format: 'legacy',
+      format: "legacy",
       algorithm,
       signature: signatureData,
     });
@@ -224,14 +224,14 @@ export class SshSignature extends SshObject {
     } = {},
   ): SshSignature {
     const blob: SshSignatureBlob = {
-      format: 'ssh-signature',
+      format: "ssh-signature",
       algorithm,
       signature,
       version: options.version || 1,
       publicKey: options.publicKey ? options.publicKey.getBlob().keyData : undefined,
-      namespace: options.namespace || 'file',
-      reserved: options.reserved || '',
-      hashAlgorithm: options.hashAlgorithm || 'sha512',
+      namespace: options.namespace || "file",
+      reserved: options.reserved || "",
+      hashAlgorithm: options.hashAlgorithm || "sha512",
     };
     return new SshSignature(blob);
   }
@@ -248,9 +248,9 @@ export class SshSignature extends SshObject {
       namespace?: string;
     } = {},
   ): Promise<SshSignature> {
-    const { format = 'legacy', namespace = 'file' } = options;
+    const { format = "legacy", namespace = "file" } = options;
 
-    if (format === 'legacy') {
+    if (format === "legacy") {
       const rawSignature = await privateKey.sign(algorithm, data);
       const algorithmUsed = algorithm || privateKey.keyType;
       return SshSignature.fromLegacy(algorithmUsed, rawSignature);
@@ -258,7 +258,7 @@ export class SshSignature extends SshObject {
       // Determine the signature algorithm to use
       const signatureAlgorithm = algorithm;
       const binding = AlgorithmRegistry.get(signatureAlgorithm);
-      const hashAlgorithm = algorithm === 'rsa-sha2-256' ? 'sha256' : 'sha512';
+      const hashAlgorithm = algorithm === "rsa-sha2-256" ? "sha256" : "sha512";
 
       // Get the public key for SSH SIGNATURE format
       const publicKey = await privateKey.getPublicKey();
@@ -267,7 +267,7 @@ export class SshSignature extends SshObject {
       const crypto = getCrypto();
 
       // Step 1: Hash the original message with the specified hash algorithm
-      const webCryptoHashAlg = hashAlgorithm === 'sha256' ? 'SHA-256' : 'SHA-512';
+      const webCryptoHashAlg = hashAlgorithm === "sha256" ? "SHA-256" : "SHA-512";
       const messageHash = await crypto.subtle.digest(webCryptoHashAlg, data as BufferSource);
       const messageHashBytes = new Uint8Array(messageHash);
 
@@ -276,13 +276,13 @@ export class SshSignature extends SshObject {
       const writer = new SshWriter();
 
       // Magic string (6 bytes)
-      writer.writeBytes(new TextEncoder().encode('SSHSIG'));
+      writer.writeBytes(new TextEncoder().encode("SSHSIG"));
 
       // Namespace (as SSH string)
       writer.writeString(namespace);
 
       // Reserved (as SSH string)
-      writer.writeString('');
+      writer.writeString("");
 
       // Hash algorithm (as SSH string)
       writer.writeString(hashAlgorithm);

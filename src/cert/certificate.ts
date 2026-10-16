@@ -1,19 +1,13 @@
-import { getCrypto } from '../crypto';
-import { SshPublicKey } from '../key/public_key';
-import { AlgorithmRegistry } from '../registry';
-import { SshSignature } from '../signature';
-import { SshCertificateType, SshObject } from '../types';
-import {
-  parseCertificateData,
-  parse as parseWireCertificate,
-  serialize as serializeWireCertificate,
-  type SshCertificateBlob,
-  type SshCertificateData,
-} from '../wire/certificate';
-import { SshReader } from '../wire/reader';
+import { getCrypto } from "../crypto";
+import { SshPublicKey } from "../key/public_key";
+import { AlgorithmRegistry } from "../registry";
+import { SshSignature } from "../signature";
+import { SshCertificateType, SshObject } from "../types";
+import { parseCertificateData, parse as parseWireCertificate, serialize as serializeWireCertificate, type SshCertificateBlob, type SshCertificateData } from "../wire/certificate";
+import { SshReader } from "../wire/reader";
 
 export class SshCertificate extends SshObject {
-  public static readonly TYPE = 'certificate';
+  public static readonly TYPE = "certificate";
   public readonly type = SshCertificate.TYPE;
 
   private _blob: SshCertificateBlob;
@@ -139,12 +133,12 @@ export class SshCertificate extends SshObject {
     reader.readBytes(reader.readUint32()); // nonce
 
     // Skip public key
-    if (this.data.keyType === 'ssh-ed25519') {
+    if (this.data.keyType === "ssh-ed25519") {
       reader.readBytes(reader.readUint32());
-    } else if (this.data.keyType === 'ssh-rsa') {
+    } else if (this.data.keyType === "ssh-rsa") {
       reader.readBytes(reader.readUint32()); // e
       reader.readBytes(reader.readUint32()); // n
-    } else if (this.data.keyType.startsWith('ecdsa-sha2-')) {
+    } else if (this.data.keyType.startsWith("ecdsa-sha2-")) {
       reader.readString(); // curve name
       reader.readBytes(reader.readUint32()); // public point
     }

@@ -1,23 +1,19 @@
-import { hex } from '@peculiar/utils/encoding';
-import * as pem from '@peculiar/utils/pem';
-import { getCrypto } from '../crypto';
-import {
-  EncryptedKeyNotSupportedError,
-  InvalidPrivateKeyFormatError,
-  UnsupportedKeyTypeError,
-} from '../errors.js';
-import { AlgorithmRegistry } from '../registry';
-import type { SshKeyType } from '../types';
-import { SshObject } from '../types';
-import { encoder } from '../utils';
-import { SshReader } from '../wire/reader';
-import { SshWriter } from '../wire/writer';
-import { SshPublicKey } from './public_key';
+import { hex } from "@peculiar/utils/encoding";
+import * as pem from "@peculiar/utils/pem";
+import { getCrypto } from "../crypto";
+import { EncryptedKeyNotSupportedError, InvalidPrivateKeyFormatError, UnsupportedKeyTypeError } from "../errors.js";
+import { AlgorithmRegistry } from "../registry";
+import type { SshKeyType } from "../types";
+import { SshObject } from "../types";
+import { encoder } from "../utils";
+import { SshReader } from "../wire/reader";
+import { SshWriter } from "../wire/writer";
+import { SshPublicKey } from "./public_key";
 
-export type SshPrivateKeyExportFormat = 'ssh' | 'pkcs8';
+export type SshPrivateKeyExportFormat = "ssh" | "pkcs8";
 
 export class SshPrivateKey extends SshObject {
-  public static readonly TYPE = 'private-key';
+  public static readonly TYPE = "private-key";
   public readonly type = SshPrivateKey.TYPE;
 
   private cryptoKey: CryptoKey;
@@ -37,7 +33,7 @@ export class SshPrivateKey extends SshObject {
    */
   private async toJWK(crypto: Crypto): Promise<JsonWebKey> {
     if (!this.cachedJwk) {
-      this.cachedJwk = await crypto.subtle.exportKey('jwk', this.cryptoKey);
+      this.cachedJwk = await crypto.subtle.exportKey("jwk", this.cryptoKey);
     }
     return this.cachedJwk;
   }
@@ -75,20 +71,18 @@ export class SshPrivateKey extends SshObject {
 
     let binaryData: Uint8Array;
     try {
-      binaryData = pem.decodeFirst(sshKey, 'OPENSSH PRIVATE KEY');
+      binaryData = pem.decodeFirst(sshKey, "OPENSSH PRIVATE KEY");
     } catch {
-      throw new InvalidPrivateKeyFormatError('Invalid base64 encoding');
+      throw new InvalidPrivateKeyFormatError("Invalid base64 encoding");
     }
 
     const reader = new SshReader(binaryData);
 
     // Check magic string "openssh-key-v1\0"
     const magic = reader.readBytes(15);
-    const expectedMagic = '6f70656e7373682d6b65792d763100';
+    const expectedMagic = "6f70656e7373682d6b65792d763100";
     if (hex.encode(magic) !== expectedMagic) {
-      throw new InvalidPrivateKeyFormatError(
-        `Invalid magic bytes. Expected: ${expectedMagic}, got: ${hex.encode(magic)}`,
-      );
+      throw new InvalidPrivateKeyFormatError(`Invalid magic bytes. Expected: ${expectedMagic}, got: ${hex.encode(magic)}`);
     }
 
     // Read OpenSSH private key structure:
@@ -97,7 +91,7 @@ export class SshPrivateKey extends SshObject {
     reader.readString(); // kdf options (skip)
 
     // Check if key is encrypted (not supported)
-    if (cipher !== 'none') {
+    if (cipher !== "none") {
       throw new EncryptedKeyNotSupportedError(cipher);
     }
 
@@ -119,11 +113,7 @@ export class SshPrivateKey extends SshObject {
   /**
    * Import from PKCS#8 format
    */
-  static async fromPKCS8(
-    pkcs8: Uint8Array,
-    type: SshKeyType,
-    crypto = getCrypto(),
-  ): Promise<SshPrivateKey> {
+  static async fromPKCS8(pkcs8: Uint8Array, type: SshKeyType, crypto = getCrypto()): Promise<SshPrivateKey> {
     const binding = AlgorithmRegistry.get(type);
 
     const cryptoKey = await binding.importPrivatePkcs8({ pkcs8, crypto });
@@ -142,11 +132,8 @@ export class SshPrivateKey extends SshObject {
   /**
    * Export private key
    */
-  async export(
-    format: SshPrivateKeyExportFormat = 'ssh',
-    crypto = getCrypto(),
-  ): Promise<string | Uint8Array> {
-    if (format === 'ssh') {
+  async export(format: SshPrivateKeyExportFormat = "ssh", crypto = getCrypto()): Promise<string | Uint8Array> {
+    if (format === "ssh") {
       const binding = AlgorithmRegistry.get(this.keyType);
 
       // Export public key blob for the outer structure using cached public key
@@ -167,12 +154,12 @@ export class SshPrivateKey extends SshObject {
       const writer = new SshWriter();
 
       // Magic string "openssh-key-v1\0"
-      writer.writeBytes(encoder.encode('openssh-key-v1\0'));
+      writer.writeBytes(encoder.encode("openssh-key-v1\0"));
 
       // Cipher, KDF, KDF options (unencrypted)
-      writer.writeString('none');
-      writer.writeString('none');
-      writer.writeString('');
+      writer.writeString("none");
+      writer.writeString("none");
+      writer.writeString("");
 
       // Number of keys
       writer.writeUint32(1);
@@ -193,7 +180,7 @@ export class SshPrivateKey extends SshObject {
       privateSectionWriter.writeBytes(privateData);
 
       // Comment (empty)
-      privateSectionWriter.writeString('');
+      privateSectionWriter.writeString("");
 
       // Padding to make total length multiple of 8
       const privData = privateSectionWriter.toUint8Array();
@@ -211,10 +198,10 @@ export class SshPrivateKey extends SshObject {
 
       // Encode as base64 and wrap in PEM
       const keyData = writer.toUint8Array();
-      return pem.encode('OPENSSH PRIVATE KEY', keyData, {
+      return pem.encode("OPENSSH PRIVATE KEY", keyData, {
         lineLength: 70,
       });
-    } else if (format === 'pkcs8') {
+    } else if (format === "pkcs8") {
       const binding = AlgorithmRegistry.get(this.keyType);
       const pkcs8 = await binding.exportPrivatePkcs8({ privateKey: this.cryptoKey, crypto });
       return new Uint8Array(pkcs8);
@@ -228,7 +215,7 @@ export class SshPrivateKey extends SshObject {
    * (e.g., "-----BEGIN OPENSSH PRIVATE KEY-----\n...").
    */
   async toSSH(): Promise<string> {
-    const result = await this.export('ssh');
+    const result = await this.export("ssh");
     return result as string;
   }
 
@@ -237,7 +224,7 @@ export class SshPrivateKey extends SshObject {
    * Returns binary DER-encoded PKCS#8 data as Uint8Array.
    */
   async toPKCS8(): Promise<Uint8Array> {
-    const result = await this.export('pkcs8');
+    const result = await this.export("pkcs8");
     return result as Uint8Array;
   }
 

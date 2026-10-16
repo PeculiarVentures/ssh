@@ -1,5 +1,5 @@
-import { InvalidFormatError } from '../errors';
-import { encoder } from '../utils';
+import { InvalidFormatError } from "../errors";
+import { encoder } from "../utils";
 
 export class SshWriter {
   private buffer: Uint8Array;
@@ -101,7 +101,7 @@ export class SshWriter {
 
   seek(offset: number): void {
     if (offset < 0 || offset > this.buffer.length) {
-      throw new InvalidFormatError('Invalid offset');
+      throw new InvalidFormatError("Invalid offset");
     }
     this.offset = offset;
   }

@@ -1,8 +1,8 @@
-import { UnsupportedKeyTypeError } from './errors.js';
-import type { SshSignatureAlgorithm } from './types';
-import type { SshPublicKeyBlob } from './wire/public_key';
-import { SshReader } from './wire/reader';
-import { SshWriter } from './wire/writer';
+import { UnsupportedKeyTypeError } from "./errors.js";
+import type { SshSignatureAlgorithm } from "./types";
+import type { SshPublicKeyBlob } from "./wire/public_key";
+import { SshReader } from "./wire/reader";
+import { SshWriter } from "./wire/writer";
 
 export interface CommonAlgorithmParams {
   crypto: Crypto;
@@ -45,14 +45,14 @@ export interface ImportPrivateFromSshParams extends CommonAlgorithmParams {
 export interface SignParams extends CommonAlgorithmParams {
   privateKey: CryptoKey;
   data: Uint8Array;
-  hash?: 'SHA-256' | 'SHA-512';
+  hash?: "SHA-256" | "SHA-512";
 }
 
 export interface VerifyParams extends CommonAlgorithmParams {
   publicKey: CryptoKey;
   signature: Uint8Array;
   data: Uint8Array;
-  hash?: 'SHA-256' | 'SHA-512';
+  hash?: "SHA-256" | "SHA-512";
 }
 
 export interface EncodeSshSignatureParams {
@@ -161,11 +161,11 @@ export class AlgorithmRegistry {
    */
   static certTypeToKeyType(certType: string): string | undefined {
     const mapping: Record<string, string> = {
-      'ssh-rsa-cert-v01@openssh.com': 'ssh-rsa',
-      'ssh-ed25519-cert-v01@openssh.com': 'ssh-ed25519',
-      'ecdsa-sha2-nistp256-cert-v01@openssh.com': 'ecdsa-sha2-nistp256',
-      'ecdsa-sha2-nistp384-cert-v01@openssh.com': 'ecdsa-sha2-nistp384',
-      'ecdsa-sha2-nistp521-cert-v01@openssh.com': 'ecdsa-sha2-nistp521',
+      "ssh-rsa-cert-v01@openssh.com": "ssh-rsa",
+      "ssh-ed25519-cert-v01@openssh.com": "ssh-ed25519",
+      "ecdsa-sha2-nistp256-cert-v01@openssh.com": "ecdsa-sha2-nistp256",
+      "ecdsa-sha2-nistp384-cert-v01@openssh.com": "ecdsa-sha2-nistp384",
+      "ecdsa-sha2-nistp521-cert-v01@openssh.com": "ecdsa-sha2-nistp521",
     };
     return mapping[certType];
   }
@@ -176,33 +176,27 @@ export class AlgorithmRegistry {
    */
   static getSupportedCertTypes(): string[] {
     return Object.keys({
-      'ssh-rsa-cert-v01@openssh.com': 'ssh-rsa',
-      'ssh-ed25519-cert-v01@openssh.com': 'ssh-ed25519',
-      'ecdsa-sha2-nistp256-cert-v01@openssh.com': 'ecdsa-sha2-nistp256',
-      'ecdsa-sha2-nistp384-cert-v01@openssh.com': 'ecdsa-sha2-nistp384',
-      'ecdsa-sha2-nistp521-cert-v01@openssh.com': 'ecdsa-sha2-nistp521',
+      "ssh-rsa-cert-v01@openssh.com": "ssh-rsa",
+      "ssh-ed25519-cert-v01@openssh.com": "ssh-ed25519",
+      "ecdsa-sha2-nistp256-cert-v01@openssh.com": "ecdsa-sha2-nistp256",
+      "ecdsa-sha2-nistp384-cert-v01@openssh.com": "ecdsa-sha2-nistp384",
+      "ecdsa-sha2-nistp521-cert-v01@openssh.com": "ecdsa-sha2-nistp521",
     });
   }
 }
 
 // Import and register algorithms
-import {
-  EcdsaP256Binding,
-  EcdsaP384Binding,
-  EcdsaP521Binding,
-  Ed25519Binding,
-  RsaBinding,
-} from './algorithms';
+import { EcdsaP256Binding, EcdsaP384Binding, EcdsaP521Binding, Ed25519Binding, RsaBinding } from "./algorithms";
 
 // Register Ed25519
-AlgorithmRegistry.register('ssh-ed25519', new Ed25519Binding());
+AlgorithmRegistry.register("ssh-ed25519", new Ed25519Binding());
 
 // Register RSA with different hashes
-AlgorithmRegistry.register('ssh-rsa', new RsaBinding('SHA-256')); // For backward compatibility
-AlgorithmRegistry.register('rsa-sha2-256', new RsaBinding('SHA-256'));
-AlgorithmRegistry.register('rsa-sha2-512', new RsaBinding('SHA-512'));
+AlgorithmRegistry.register("ssh-rsa", new RsaBinding("SHA-256")); // For backward compatibility
+AlgorithmRegistry.register("rsa-sha2-256", new RsaBinding("SHA-256"));
+AlgorithmRegistry.register("rsa-sha2-512", new RsaBinding("SHA-512"));
 
 // Register ECDSA
-AlgorithmRegistry.register('ecdsa-sha2-nistp256', EcdsaP256Binding);
-AlgorithmRegistry.register('ecdsa-sha2-nistp384', EcdsaP384Binding);
-AlgorithmRegistry.register('ecdsa-sha2-nistp521', EcdsaP521Binding);
+AlgorithmRegistry.register("ecdsa-sha2-nistp256", EcdsaP256Binding);
+AlgorithmRegistry.register("ecdsa-sha2-nistp384", EcdsaP384Binding);
+AlgorithmRegistry.register("ecdsa-sha2-nistp521", EcdsaP521Binding);

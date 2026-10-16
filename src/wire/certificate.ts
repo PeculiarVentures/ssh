@@ -1,11 +1,11 @@
-import { base64 as base64Codec } from '@peculiar/utils/encoding';
-import { InvalidFormatError, UnsupportedAlgorithmError } from '../errors';
-import { AlgorithmRegistry } from '../registry';
-import type { SshKeyType } from '../types';
-import { decoder, encoder } from '../utils';
-import type { SshPublicKeyBlob } from './public_key';
-import { SshReader } from './reader';
-import { SshWriter } from './writer';
+import { base64 as base64Codec } from "@peculiar/utils/encoding";
+import { InvalidFormatError, UnsupportedAlgorithmError } from "../errors";
+import { AlgorithmRegistry } from "../registry";
+import type { SshKeyType } from "../types";
+import { decoder, encoder } from "../utils";
+import type { SshPublicKeyBlob } from "./public_key";
+import { SshReader } from "./reader";
+import { SshWriter } from "./writer";
 
 export interface SshCertificateBlob {
   type: SshKeyType;
@@ -18,7 +18,7 @@ export interface SshCertificateData {
   keyType: string;
   publicKey: SshPublicKeyBlob;
   serial: bigint;
-  type: 'user' | 'host';
+  type: "user" | "host";
   keyId: string;
   validPrincipals: string[];
   validAfter: bigint;
@@ -31,15 +31,15 @@ export interface SshCertificateData {
 }
 
 export function parse(input: Uint8Array | string): SshCertificateBlob {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     const parts = input.trim().split(/\s+/);
     if (parts.length < 2) {
-      throw new InvalidFormatError('SSH certificate string', 'type base64 [comment]');
+      throw new InvalidFormatError("SSH certificate string", "type base64 [comment]");
     }
 
     const type = parts[0] as SshKeyType;
     const blob = base64Codec.decode(parts[1]);
-    const comment = parts.length > 2 ? parts.slice(2).join(' ') : undefined;
+    const comment = parts.length > 2 ? parts.slice(2).join(" ") : undefined;
 
     // Validate blob
     const reader = new SshReader(blob);
@@ -91,7 +91,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
 
   // Read type
   const typeValue = reader.readUint32();
-  const type: 'user' | 'host' = typeValue === 1 ? 'user' : 'host';
+  const type: "user" | "host" = typeValue === 1 ? "user" : "host";
 
   // Read key ID
   const keyId = reader.readString();
@@ -128,7 +128,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
       try {
         const name = optionsReader.readString();
         const valueData = optionsReader.readBytes(optionsReader.readUint32());
-        const value = valueData.length === 0 ? '' : decoder.decode(valueData);
+        const value = valueData.length === 0 ? "" : decoder.decode(valueData);
         criticalOptions[name] = value;
       } catch {
         break; // End of options data
@@ -147,7 +147,7 @@ export function parseCertificateData(keyData: Uint8Array): SshCertificateData {
       try {
         const name = extReader.readString();
         const valueData = extReader.readBytes(extReader.readUint32());
-        const value = valueData.length === 0 ? '' : decoder.decode(valueData);
+        const value = valueData.length === 0 ? "" : decoder.decode(valueData);
         extensions[name] = value;
       } catch {
         break; // End of extensions data
@@ -199,14 +199,14 @@ export function serialize(cert: SshCertificateBlob): string {
   if (cert.comment) {
     parts.push(cert.comment);
   }
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 export interface CreateCertificateDataParams {
   publicKey: SshPublicKeyBlob;
   keyType: string;
   serial: bigint;
-  type: 'user' | 'host';
+  type: "user" | "host";
   keyId: string;
   validPrincipals: string[];
   validAfter: bigint;
@@ -219,26 +219,12 @@ export interface CreateCertificateDataParams {
 }
 
 export function createCertificateData(params: CreateCertificateDataParams): Uint8Array {
-  const {
-    publicKey,
-    keyType,
-    serial,
-    type,
-    keyId,
-    validPrincipals,
-    validAfter,
-    validBefore,
-    criticalOptions,
-    extensions,
-    nonce,
-    signatureKey,
-    signature,
-  } = params;
+  const { publicKey, keyType, serial, type, keyId, validPrincipals, validAfter, validBefore, criticalOptions, extensions, nonce, signatureKey, signature } = params;
 
   const writer = new SshWriter();
 
   // Write certificate type
-  const certType = keyType + '-cert-v01@openssh.com';
+  const certType = keyType + "-cert-v01@openssh.com";
   writer.writeString(certType);
 
   // Write nonce
@@ -254,7 +240,7 @@ export function createCertificateData(params: CreateCertificateDataParams): Uint
   writer.writeUint64(serial);
 
   // Write type
-  writer.writeUint32(type === 'user' ? 1 : 2);
+  writer.writeUint32(type === "user" ? 1 : 2);
 
   // Write key ID
   writer.writeString(keyId);
