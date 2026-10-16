@@ -1,7 +1,16 @@
-# @peculiar/ssh
+<h1 align="center">
+  @peculiar/ssh
+</h1>
 
-[![Publish](https://github.com/PeculiarVentures/ssh/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/PeculiarVentures/ssh/actions/workflows/publish.yml)
-[![Coverage Status](https://coveralls.io/repos/github/PeculiarVentures/ssh/badge.svg?branch=main)](https://coveralls.io/github/PeculiarVentures/ssh?branch=main)
+<div align="center">
+
+![NPM License](https://img.shields.io/npm/l/@peculiar/ssh)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/PeculiarVentures/ssh/publish.yml?branch=main&label=publish)
+[![npm version](https://img.shields.io/npm/v/@peculiar/ssh.svg)](https://www.npmjs.com/package/@peculiar/ssh)
+![Coveralls](https://img.shields.io/coverallsCoverage/github/PeculiarVentures/ssh)
+[![npm downloads](https://img.shields.io/npm/dm/@peculiar/ssh.svg)](https://www.npmjs.com/package/@peculiar/ssh)
+
+</div>
 
 A TypeScript library for working with SSH keys and certificates in both Node.js and browsers, built on top of WebCrypto. Provides parsing, serialization, conversion (SPKI/PKCS8 ↔ SSH), and certificate signing/verification with an extensible algorithm registry.
 
